@@ -1,0 +1,10 @@
+version: '3.4'
+services:
+  seo-admin-backend-script-app:
+    image: seo-admin-backend-script
+    ports:
+      - '8000:8000'
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+  
