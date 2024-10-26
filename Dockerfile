@@ -10,7 +10,7 @@ COPY requirements.txt .
 # Cài đặt các dependency cần thiết
 RUN python3 -m venv venv
 RUN source venv/bin/activate
-RUN pip3 install fastapi uvicorn
+RUN pip3 install -r requirements.txt
 
 # Sao chép toàn bộ mã nguồn vào thư mục làm việc
 COPY . .
@@ -22,4 +22,4 @@ RUN adduser -D -u 501 appuser && \
 # Sử dụng user không phải root để chạy container
 USER appuser
 
-CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000 --reload"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
