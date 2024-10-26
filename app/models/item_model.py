@@ -3,6 +3,6 @@ from pydantic import BaseModel
 class Item(BaseModel):
     id: int
     name: str
-    description: str | None = None
+    description: str
     price: float
     quantity: int

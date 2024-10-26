@@ -10,7 +10,7 @@ COPY requirements.txt .
 # Cài đặt các dependency cần thiết
 RUN python3 -m venv venv
 RUN source venv/bin/activate
-RUN pip3 install fastapi uvicorn
+RUN pip3 install -r requirements.txt
 
 # Sao chép toàn bộ mã nguồn vào thư mục làm việc
 COPY . .

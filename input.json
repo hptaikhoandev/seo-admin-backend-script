@@ -1,8 +1,0 @@
-{
-    "ip": "111.11.11.11",
-    "ssl_type": "flexible",
-    "domains": [
-        "A.com",
-        "B.com"
-    ]
-}

@@ -30,7 +30,7 @@ class DomainController:
         results = []
         for domain in request.domains:
             domain = DomainController.clean_url(domain)
-            account = random.choice(admin_accounts)
+            account = random.choice([account for account in admin_accounts if account["team"] == request.team])
             account_id = account['account_id']
             # Step 1: Add Domain
             domain_data = {
