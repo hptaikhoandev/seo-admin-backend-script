@@ -22,4 +22,4 @@ RUN adduser -D -u 501 appuser && \
 # Sử dụng user không phải root để chạy container
 USER appuser
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 7200 --reload"]

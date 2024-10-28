@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, FastAPI, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.controllers.domain_controller import DomainController
+from app.controllers.redirect_controller import RedirectController
 from app.models.domain_request import DomainRequest
 
 
@@ -14,8 +14,8 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
             detail="Invalid or missing token",
         )
 
-@router.post("/script/add-list-domains-to-cloudflare")
+@router.post("/script/redirect-domains")
 # async def add_domains(request: DomainRequest, credentials: HTTPAuthorizationCredentials = Depends(verify_token)):
-async def add_domains(request: DomainRequest):
-    return await DomainController.add_domains(request)
+async def redirect_domains(request: DomainRequest):
+    return await RedirectController.redirect_domains(request)
 
