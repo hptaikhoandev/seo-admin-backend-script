@@ -27,6 +27,7 @@ class DomainController:
 
     @staticmethod
     async def add_domains(request: DomainRequest):
+        print(f"request===> {request}")
         results = []
         for domain in request.domains:
             domain = DomainController.clean_url(domain)
@@ -42,6 +43,7 @@ class DomainController:
             domain_result = domain_response.json()
             
             if not domain_result.get('success'):
+                print(f"domain_result===> {domain_result}")
                 continue
 
             zone_id = domain_result['result']['id']
@@ -66,6 +68,7 @@ class DomainController:
             }
             dns_response = requests.post(dns_record_url, headers=headers, json=dns_record_data)
             if not dns_response.json().get('success'):
+                print(f"dns_response===> {dns_response.json()}")
                 continue
 
             # Step 4: Add CNAME Record for www
@@ -78,13 +81,13 @@ class DomainController:
             }
             cname_response = requests.post(dns_record_url, headers=headers, json=cname_record_data)
             if not cname_response.json().get('success'):
+                print(f"cname_response===> {cname_response.json()}")
                 continue
 
             # Step 5: Enable SSL
-            if request.ssl_type == "flexible":
-                ssl_url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/settings/ssl'
-                ssl_data = {"value": request.ssl_type}
-                requests.patch(ssl_url, headers=headers, json=ssl_data)
+            ssl_url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/settings/ssl'
+            ssl_data = {"value": request.ssl_type}
+            requests.patch(ssl_url, headers=headers, json=ssl_data)
 
             # Always Use HTTPS
             always_use_https_url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/settings/always_use_https'
