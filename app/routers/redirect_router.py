@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, FastAPI, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.controllers.redirect_controller import RedirectController
-from app.models.domain_request import DomainRequest
+from app.models.redirect_request import RedirectRequest
 
 
 router = APIRouter()
@@ -16,6 +16,6 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
 @router.post("/script/redirect-domains")
 # async def add_domains(request: DomainRequest, credentials: HTTPAuthorizationCredentials = Depends(verify_token)):
-async def redirect_domains(request: DomainRequest):
-    return await RedirectController.redirect_domains(request)
+async def redirect_domains(request: RedirectRequest):
+    return await RedirectController.create_redirect(request)
 

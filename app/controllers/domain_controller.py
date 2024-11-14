@@ -2,9 +2,12 @@ from app.models.domain_request import DomainRequest
 import requests
 import random
 
-api_token = 'fjtVVMq3P--nYpUJ2kNs9Gq-i4_R5yWd-tC1kXLs'
+# api_token = 'fjtVVMq3P--nYpUJ2kNs9Gq-i4_R5yWd-tC1kXLs'
+api_token = 'Ih9Y3wmkGYvXXgOeVJ-h_DWTl7998POqqK9ijBb5'
 admin_accounts = [
-    {"team": "seo-3", "account_id": "e1c1a8d5af36e261554feeb763bfa9ca", "email": "ting@darasa.io"},
+    # {"team": "seo-3", "account_id": "e1c1a8d5af36e261554feeb763bfa9ca", "email": "ting@darasa.io"},
+        {"team": "seo-3", "account_id": "3b982bfb6af524090fb397e022006c1e", "email": "roylevn215@gmail.com"},
+
     # Other admin accounts here...
 ]
 
@@ -27,7 +30,7 @@ class DomainController:
 
     @staticmethod
     async def add_domains(request: DomainRequest):
-        print(f"request===> {request}")
+        resultMessage = {"success": 0, "fail": 0}
         results = []
         for domain in request.domains:
             domain = DomainController.clean_url(domain)
@@ -44,8 +47,10 @@ class DomainController:
             
             if not domain_result.get('success'):
                 print(f"domain_result===> {domain_result}")
+                resultMessage["fail"] += 1
                 continue
-
+            else: 
+                resultMessage["success"] += 1
             zone_id = domain_result['result']['id']
             name_servers = domain_result['result']['name_servers']
             # Step 2: Remove Existing DNS Records
@@ -96,6 +101,4 @@ class DomainController:
             # Add to results
             results.append({'domain': domain, 'ns': ",".join(name_servers)})
 
-        return {"message": "Domains processed successfully", "results": results}
-
-    
+        return {"status": "success", "results": results, "resultMessage": resultMessage}
