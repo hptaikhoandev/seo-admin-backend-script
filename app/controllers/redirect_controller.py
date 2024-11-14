@@ -2,6 +2,7 @@ from app.models.redirect_request import RedirectRequest
 from fastapi import HTTPException
 import requests
 import random
+import time
 
 api_token = 'Ih9Y3wmkGYvXXgOeVJ-h_DWTl7998POqqK9ijBb5'
 admin_accounts = [
@@ -55,19 +56,38 @@ class RedirectController:
         id = option['id']
 
         for index, domain in enumerate(request.source_domains):
-            zone_id = RedirectController.get_zone_id(domain)
+            # Thử lại tối đa 3 lần để lấy zone_id
+            max_retries = 2
+            retry_count = 0
+            zone_id = None
+
+            while retry_count < max_retries:
+                zone_id = RedirectController.get_zone_id(domain)
+                if zone_id:
+                    break  # Thoát vòng lặp nếu lấy zone_id thành công
+                else:
+                    retry_count += 1
+                    if retry_count < max_retries:
+                        print(f"Attempt {retry_count} failed for {domain}, retrying in 30 seconds...")
+                        time.sleep(30)  # Đợi 30 giây trước khi thử lại
+                    else:
+                        print(f"Failed to retrieve zone_id for {domain} after {max_retries} attempts.")
+                        result["fail"] += 1
+                        continue  # Chuyển sang domain tiếp theo nếu đã hết số lần thử
+
+            # Tiếp tục xử lý các phần còn lại nếu zone_id được lấy thành công
             if not zone_id:
-                result["fail"] += 1
-                continue
+                continue  # Bỏ qua domain hiện tại nếu không thể lấy được zone_id sau 3 lần thử
+
             # Cloudflare API endpoint to get Page Rules
             list_url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/pagerules"
-            
+
             # Get existing Page Rules
             response = requests.get(list_url, headers=headers)
             if response.status_code != 200:
                 print(f"Failed to retrieve Page Rules for {domain}: {response.text}")
                 continue
-            
+
             existing_rules = response.json().get('result', [])
 
             # Delete all existing Page Rules
@@ -82,12 +102,10 @@ class RedirectController:
                         print(f"Deleted Page Rule with ID {rule_id} for {domain}")
                     else:
                         print(f"Failed to delete Page Rule {rule_id} for {domain}: {delete_response.text}")
-            
+
             # Cloudflare API endpoint to create a Page Rule
             create_url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/pagerules"
             # Data for the Page Rule
-            print(f"yyyy {id}")
-
             rule_data = {
                 "targets": [
                     {
@@ -150,6 +168,6 @@ class RedirectController:
                     print(f"Failed to create Page Rule for www.{domain}: {create_www_response.text}")
             else:
                 print(f"Failed to create Page Rule for {domain}: {create_response.text}")
-        
+
         return {"status": "success", "result": result}
     
