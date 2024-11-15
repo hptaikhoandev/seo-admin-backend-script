@@ -31,8 +31,9 @@ class DomainController:
 
     @staticmethod
     async def add_domains(request: DomainRequest):
-        resultMessage = {"success": 0, "fail": 0}
+        resultMessage = {"success": 0, "fail": {"count": 0, "messages": []}}
         results = []
+        
         for domain in request.domains:
             domain = DomainController.clean_url(domain)
             account = random.choice([account for account in admin_accounts if account["team"] == request.team])
@@ -61,10 +62,12 @@ class DomainController:
                     if retry_count < max_retries:
                         print(f"Retrying... Attempt {retry_count + 1} after 30 seconds")
                         time.sleep(30)  # Chờ 30 giây trước khi thử lại
-                
-            # Nếu không thành công sau 3 lần thử
+
+            # Nếu không thành công sau các lần thử
             if not domain_result.get('success'):
-                resultMessage["fail"] += 1
+                resultMessage["fail"]["count"] += 1
+                fail_message = domain_result.get("errors", [{"message": "Unknown error"}])[0].get("message")
+                resultMessage["fail"]["messages"].append(f"{domain}: {fail_message}")
                 continue  # Bỏ qua vòng lặp này và tiếp tục với domain tiếp theo
 
             # Luồng chính sau khi domain được thêm thành công
@@ -122,3 +125,4 @@ class DomainController:
             results.append({'domain': domain, 'ns': ",".join(name_servers)})
 
         return {"status": "success", "results": results, "resultMessage": resultMessage}
+
