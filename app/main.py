@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers import item_router
 from app.routers import domain_router
 from app.routers import redirect_router
+from app.routers import clonesite_router
 
 
 app = FastAPI()
@@ -19,6 +20,7 @@ app.add_middleware(
 app.include_router(item_router.router)
 app.include_router(domain_router.router)
 app.include_router(redirect_router.router)
+app.include_router(clonesite_router.router)
 
 # Root route
 @app.get("/")

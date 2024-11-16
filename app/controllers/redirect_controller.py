@@ -35,7 +35,7 @@ class RedirectController:
             return None
     @staticmethod
     async def create_redirect(request: RedirectRequest):
-        result = {"success": 0, "fail": 0}
+        result = {"success": 0, "fail": {"count": 0, "messages": []}}
         # Kiểm tra nếu số lượng phần tử của source_domains và target_domains không bằng nhau
         if len(request.source_domains) != len(request.target_domains):
             return {"status": "fail", "message": "Số phần tử của 2 dãy domain nhập vào không giống nhau"}
@@ -57,7 +57,7 @@ class RedirectController:
 
         for index, domain in enumerate(request.source_domains):
             # Thử lại tối đa 3 lần để lấy zone_id
-            max_retries = 2
+            max_retries = 1
             retry_count = 0
             zone_id = None
 
@@ -72,7 +72,9 @@ class RedirectController:
                         time.sleep(30)  # Đợi 30 giây trước khi thử lại
                     else:
                         print(f"Failed to retrieve zone_id for {domain} after {max_retries} attempts.")
-                        result["fail"] += 1
+                        result["fail"]["count"] += 1
+                        fail_message = "chưa đăng ký tên miền với Cloudflare"
+                        result["fail"]["messages"].append(f"{domain}: {fail_message}")
                         continue  # Chuyển sang domain tiếp theo nếu đã hết số lần thử
 
             # Tiếp tục xử lý các phần còn lại nếu zone_id được lấy thành công
