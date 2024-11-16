@@ -3,11 +3,13 @@ import requests
 import random
 import time
 
-api_token = 'fjtVVMq3P--nYpUJ2kNs9Gq-i4_R5yWd-tC1kXLs'
-# api_token = 'Ih9Y3wmkGYvXXgOeVJ-h_DWTl7998POqqK9ijBb5'
+api_token = 'fjtVVMq3P--nYpUJ2kNs9Gq-i4_R5yWd-tC1kXLs' # ting
+# api_token = 'Ih9Y3wmkGYvXXgOeVJ-h_DWTl7998POqqK9ijBb5' # roylevn215
+api_token = '-nlmFYjVx_SHBQf8rKdyzTdbX-Qw3zmTLmBs4HnP' # Digital01
 admin_accounts = [
-    {"team": "seo-3", "account_id": "e1c1a8d5af36e261554feeb763bfa9ca", "email": "ting@darasa.io"},
-        # {"team": "seo-3", "account_id": "3b982bfb6af524090fb397e022006c1e", "email": "roylevn215@gmail.com"},
+    {"team": "seo-3", "account_id": "e1c1a8d5af36e261554feeb763bfa9ca", "email": "ting@darasa.io"}, # ting
+    # {"team": "seo-3", "account_id": "3b982bfb6af524090fb397e022006c1e", "email": "roylevn215@gmail.com"}, # roylevn215
+    # {"team": "seo-3", "account_id": "b1061b061ed92d71433390eaa116a3fa", "email": "digital01@rocketagency.media"}, # Digital01
 
     # Other admin accounts here...
 ]
@@ -46,7 +48,7 @@ class DomainController:
                 "jump_start": True
             }
             
-            max_retries = 2  # Số lần thử tối đa
+            max_retries = 1  # Số lần thử tối đa
             retry_count = 0
             while retry_count < max_retries:
                 domain_response = requests.post(add_domain_url, headers=headers, json=domain_data)
@@ -57,8 +59,7 @@ class DomainController:
                     break
                 else:
                     print(f"domain_result===> {domain_result}")
-                    retry_count += 1
-                    
+                    retry_count += 1                 
                     if retry_count < max_retries:
                         print(f"Retrying... Attempt {retry_count + 1} after 30 seconds")
                         time.sleep(30)  # Chờ 30 giây trước khi thử lại

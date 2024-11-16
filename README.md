@@ -2,13 +2,12 @@
 Step by step run project in local:
 $ make run
 OR:
-$ brew install pipx
 $ python3 -m venv venv
 $ source venv/bin/activate
-$ pipx install fastapi uvicorn requests
+$ pip3 install fastapi uvicorn requests paramiko 
 $ uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 7200 --reload
 OR:
-$ brew install pipx && python3 -m venv venv && source venv/bin/activate && pipx install fastapi uvicorn requests && uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 7200 --reload
+$ python3 -m venv venv && source venv/bin/activate && pip3 install fastapi uvicorn requests paramiko && uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 7200 --reload
 => http://localhost:8000/api/v1/resource
 
 // Homepage Redirect: /* ==> /
