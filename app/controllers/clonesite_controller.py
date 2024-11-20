@@ -54,11 +54,11 @@ class ClonesiteController:
 
             if error.strip():
                 result["fail"]["count"] += 1
-                # result["fail"]["messages"].append(error.strip())
-                result["fail"]["messages"].append("Bị lỗi một trong các trường hợp sau")
-                result["fail"]["messages"].append("Server IP chứa wedsite không tồn tại")
-                result["fail"]["messages"].append("Domain source không tồn tại")
-                result["fail"]["messages"].append("Domain target đã tồn tại rồi")
+                result["fail"]["messages"].append(error.strip())
+                # result["fail"]["messages"].append("Bị lỗi một trong các trường hợp sau")
+                # result["fail"]["messages"].append("Server IP chứa wedsite không tồn tại")
+                # result["fail"]["messages"].append("Domain source không tồn tại")
+                # result["fail"]["messages"].append("Domain target đã tồn tại rồi")
             else:
                 result["success"] += 1
 
@@ -66,10 +66,10 @@ class ClonesiteController:
 
         except Exception as e:
             result["fail"]["count"] += 1
-            # result["fail"]["messages"].append(str(e))
-            result["fail"]["messages"].append("Bị lỗi một trong các trường hợp sau:")
-            result["fail"]["messages"].append("Server IP chứa wedsite không tồn tại")
-            result["fail"]["messages"].append("Domain source không tồn tại")
-            result["fail"]["messages"].append("Domain target đã tồn tại rồi")
+            result["fail"]["messages"].append(str(e))
+            # result["fail"]["messages"].append("Bị lỗi một trong các trường hợp sau:")
+            # result["fail"]["messages"].append("Server IP chứa wedsite không tồn tại")
+            # result["fail"]["messages"].append("Domain source không tồn tại")
+            # result["fail"]["messages"].append("Domain target đã tồn tại rồi")
             return {"status": "success", "result": result}
 
