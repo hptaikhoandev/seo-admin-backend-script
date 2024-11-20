@@ -11,61 +11,74 @@ export LC_ALL=en_US.UTF-8
 NAME=$1
 NAME2=$2
 
-if [[ $NAME = "98" ]];then
-NAME=""
+# Xử lý khi NAME bằng "98"
+if [[ $NAME = "98" ]]; then
+  NAME=""
 fi
 
-if [[ $NAME = '' ]];then
-. /etc/wptt/tenmien
-echo ""
-echo ""
-echo "Lựa chọn domain hoặc subdomain bạn muốn sao chép: "
-echo ""
-lua_chon_NAME
+# Nếu NAME rỗng, yêu cầu người dùng chọn tên miền
+if [[ $NAME = '' ]]; then
+  if ! . /etc/wptt/tenmien; then
+    echo "Error: Không thể tải file cấu hình /etc/wptt/tenmien" >&2
+    exit 1
+  fi
+  echo ""
+  echo "Lựa chọn domain hoặc subdomain bạn muốn sao chép: "
+  echo ""
+  if ! lua_chon_NAME; then
+    echo "Error: Không thể thực thi lua_chon_NAME" >&2
+    exit 1
+  fi
 fi
 
 
+# Kiểm tra nếu cả NAME và NAME2 tồn tại
+pathcheck_name1="/etc/wptt/vhost/.$NAME.conf"
+pathcheck_name2="/etc/wptt/vhost/.$NAME2.conf"
 
+if [[ -f "$pathcheck_name1" && -f "$pathcheck_name2" ]]; then
+  echo "Error: Tên miền $NAME và $NAME2 đều đã tồn tại trên hệ thống" >&2
+  exit 1
+fi
+
+# Kiểm tra nếu $NAME không hợp lệ hoặc không tồn tại
 if [[ "$NAME" = "0" || "$NAME" = "" ]]; then
-	wptangtoc 1
+  echo "Error: Tên miền không hợp lệ hoặc không được cung cấp." >&2
+  exit 1
 fi
 
 pathcheck="/etc/wptt/vhost/.$NAME.conf"
 if [[ ! -f "$pathcheck" ]]; then
-    clear
-	echoDo "Tên miền không tồn tại trên hệ thống này"
-    sleep 3
-	wptangtoc 1
-    exit
+  echo "Error: Tên miền $NAME không tồn tại trên hệ thống này." >&2
+  exit 1
 fi
 
 
 NAME_NGUON=$(echo $NAME)
 
-if [[ $2 = '' ]];then
-read -p "Nhập domain hoac subdomain bạn muốn thêm và sao chép vào
-    (vidu: wptangtoc.com, abc.wptangtoc.com ...) [0=Thoat]: " NAME2
+if [[ $2 = '' ]]; then
+    read -p "Nhập domain hoặc subdomain bạn muốn thêm và sao chép vào
+    (ví dụ: wptangtoc.com, abc.wptangtoc.com ...) [0=Thoát]: " NAME2
 fi
 
 if [ "$NAME2" = '' ]; then
-  clear
-  echo "Ban chua nhap ten mien domain."
-  exit
+    clear
+    echo "Bạn chưa nhập tên miền domain." >&2  # In lỗi ra stderr
+    exit 1
 fi
 
 if [[ "$NAME2" = "0" ]]; then
-  clear
-  exit
+    clear
+    echo "Thoát khỏi chương trình." >&2  # In thông báo thoát ra stderr nếu cần
+    exit 1
 fi
 
-
-#domain người dùng nhập sử dụng thêm space cách, sẽ báo không đúng định dạng
-if [ $(echo $NAME2 | wc -w) -gt 1 ];then
-clear
-. /etc/wptt/echo-color
-echoDo "domain nhập không đúng định dạng"
-exit
+# Domain người dùng nhập sử dụng thêm space cách, sẽ báo không đúng định dạng
+if [ $(echo $NAME2 | wc -w) -gt 1 ]; then
+    echo "ERROR: Domain nhập không đúng định dạng" >&2
+    exit 1
 fi
+
 
 #chuyển đổi viết hoa thành chữ thường điều kiện
 NAME2=$(echo $NAME2 | tr '[:upper:]' '[:lower:]')
