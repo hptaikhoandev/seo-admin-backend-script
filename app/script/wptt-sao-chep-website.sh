@@ -336,8 +336,6 @@ if (( $check_ky_tu_user_name > 60 ));then
 	username=$(echo $username | cut -c 1-60)
 fi
 _runing "Thêm database mới cho website $NAME2"
-echo "$database_admin_username"
-echo "$database_admin_password"
 mariadb -u "$database_admin_username" -p"$database_admin_password" -e "DROP DATABASE IF EXISTS ${database}"
 mariadb -u "$database_admin_username" -p"$database_admin_password" -e "CREATE DATABASE IF NOT EXISTS ${database}"
 mariadb -u "$database_admin_username" -p"$database_admin_password" -e "DROP USER IF EXISTS '${username}'@'localhost'"
