@@ -6,19 +6,6 @@ import time
 import paramiko
 import os
 
-api_token = 'Ih9Y3wmkGYvXXgOeVJ-h_DWTl7998POqqK9ijBb5'
-admin_accounts = [
-    {"team": "seo-3", "account_id": "3b982bfb6af524090fb397e022006c1e", "email": "roylevn215@gmail.com"},
-    # Other admin accounts here...
-]
-
-headers = {
-    'Authorization': f'Bearer {api_token}',
-    'Content-Type': 'application/json'
-}
-
-items_db = []
-
 class ClonesiteController:
     @staticmethod
     async def clone_site(request: ClonesiteRequest):
@@ -31,7 +18,7 @@ class ClonesiteController:
         try:
             pem_file_path = f"app/pem/{SERVER_IP}.pem"
             if not os.path.exists(pem_file_path):
-                raise FileNotFoundError(f"Key file {pem_file_path} not found.")
+                raise FileNotFoundError(f"Key file {pem_file_path} not registry.")
             
             ssh_client = paramiko.SSHClient()
             ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -55,10 +42,6 @@ class ClonesiteController:
             if error.strip():
                 result["fail"]["count"] += 1
                 result["fail"]["messages"].append(error.strip())
-                # result["fail"]["messages"].append("Bị lỗi một trong các trường hợp sau")
-                # result["fail"]["messages"].append("Server IP chứa wedsite không tồn tại")
-                # result["fail"]["messages"].append("Domain source không tồn tại")
-                # result["fail"]["messages"].append("Domain target đã tồn tại rồi")
             else:
                 result["success"] += 1
 
@@ -67,9 +50,5 @@ class ClonesiteController:
         except Exception as e:
             result["fail"]["count"] += 1
             result["fail"]["messages"].append(str(e))
-            # result["fail"]["messages"].append("Bị lỗi một trong các trường hợp sau:")
-            # result["fail"]["messages"].append("Server IP chứa wedsite không tồn tại")
-            # result["fail"]["messages"].append("Domain source không tồn tại")
-            # result["fail"]["messages"].append("Domain target đã tồn tại rồi")
             return {"status": "success", "result": result}
 
