@@ -1,3 +1,4 @@
+TIMESTAMP := $(shell date +%s)
 run:
-	docker build -t seo-admin-backend-script . && docker-compose up -d
-	
+	@echo "Running Docker Compose with TIMESTAMP=$(TIMESTAMP)"
+	TIMESTAMP=$(TIMESTAMP) docker-compose up -d
