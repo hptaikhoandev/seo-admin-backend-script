@@ -1,7 +1,9 @@
-version: '3.4'
 services:
-  seo-admin-backend-script-app:
-    image: seo-admin-backend-script
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: "seo-admin-backend_script_${TIMESTAMP}"
     ports:
       - '8000:8000'
     volumes:
