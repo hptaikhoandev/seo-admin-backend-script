@@ -15,5 +15,5 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 
 @router.post("/script/add-list-domains-to-multi-sites")
 # async def add_domains(request: DomainRequest, credentials: HTTPAuthorizationCredentials = Depends(verify_token)):
-async def clone_site(request: MultisiteRequest):
+async def multi_site(request: MultisiteRequest):
     return await MultisiteController.multi_site(request)
