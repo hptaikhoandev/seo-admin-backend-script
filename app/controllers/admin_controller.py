@@ -112,8 +112,8 @@ class AdminController:
 
             ec2_client = boto3.client(
                 'ec2',
-                aws_access_key_id='AKIA5JMSUDKVBF5LWMPY', 
-                aws_secret_access_key='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', 
+                aws_access_key_id='', 
+                aws_secret_access_key='', 
                 region_name='ap-northeast-1' 
             )
             timestamp = int(time.time())
@@ -242,8 +242,8 @@ class AdminController:
             key_name = f"{team_name}"
             ec2_client = boto3.client(
                 'ec2',
-                aws_access_key_id='AKIA5JMSUDKVBF5LWMPY', 
-                aws_secret_access_key='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', 
+                aws_access_key_id='', 
+                aws_secret_access_key='', 
                 region_name='ap-northeast-1' 
             )
             print(f"KeyPair created successfully.")
@@ -304,8 +304,8 @@ class AdminController:
             # Khởi tạo EC2 client
             ec2_client = boto3.client(
                 'ec2',
-                aws_access_key_id='AKIA5JMSUDKVBF5LWMPY',
-                aws_secret_access_key='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',
+                aws_access_key_id='',
+                aws_secret_access_key='',
                 region_name='ap-northeast-1'
             )
 
