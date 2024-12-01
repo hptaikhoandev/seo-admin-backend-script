@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, FastAPI, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.controllers.multisite_controller import MultisiteController
-from app.models.multisite_request import MultisiteRequest
+from app.controllers.admin_controller import AdminController
+from app.models.server_request import ServerRequest
 
 router = APIRouter()
 security = HTTPBearer()
@@ -13,7 +13,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
             detail="Invalid or missing token",
         )
 
-@router.post("/script/add-list-domains-to-multi-sites")
+@router.post("/script/add-server-domains")
 # async def add_domains(request: DomainRequest, credentials: HTTPAuthorizationCredentials = Depends(verify_token)):
-async def multi_site(request: MultisiteRequest):
-    return await MultisiteController.multi_site(request)
+async def add_server_domains(request: ServerRequest):
+    return await AdminController.add_server_domains(request)

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, FastAPI, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.controllers.multisite_controller import MultisiteController
-from app.models.multisite_request import MultisiteRequest
+from app.controllers.trackinglink_controller import TrackinglinkController
+from app.models.trackinglink_request import TrackinglinkRequest
 
 router = APIRouter()
 security = HTTPBearer()
@@ -13,7 +13,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
             detail="Invalid or missing token",
         )
 
-@router.post("/script/add-list-domains-to-multi-sites")
+@router.post("/script/tracking-links")
 # async def add_domains(request: DomainRequest, credentials: HTTPAuthorizationCredentials = Depends(verify_token)):
-async def multi_site(request: MultisiteRequest):
-    return await MultisiteController.multi_site(request)
+async def tracking_links(request: TrackinglinkRequest):
+    return await TrackinglinkController.tracking_links()

@@ -5,6 +5,8 @@ from app.routers import domain_router
 from app.routers import redirect_router
 from app.routers import clonesite_router
 from app.routers import multisite_router
+from app.routers import admin_router
+from app.routers import tracking_link_router
 
 
 app = FastAPI()
@@ -23,6 +25,9 @@ app.include_router(domain_router.router)
 app.include_router(redirect_router.router)
 app.include_router(clonesite_router.router)
 app.include_router(multisite_router.router)
+app.include_router(admin_router.router)
+app.include_router(admin_router.router)
+app.include_router(tracking_link_router.router)
 
 # Root route
 @app.get("/")
