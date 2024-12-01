@@ -4,7 +4,7 @@ $ make run
 OR:
 $ python3 -m venv venv
 $ source venv/bin/activate
-$ pip3 install fastapi uvicorn requests paramiko boto3 google-api-python-client google-auth google-auth-httplib2 google-auth-oauthlib
+$ pip3 install -r requirements.txt
 $ uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 7200 --reload
 OR:
 $ python3 -m venv venv && source venv/bin/activate && pip3 install fastapi uvicorn requests paramiko && uvicorn app.main:app --host 0.0.0.0 --port 8000 --timeout-keep-alive 7200 --reload

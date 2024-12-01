@@ -405,13 +405,6 @@ RewriteRule . /index.php [L]
   wp rewrite structure '/%postname%/' --path=/usr/local/lsws/"$domain"/html --allow-root >/dev/null 2>&1
     sleep 0.4
 
-#tao file robots
-# cat >"/usr/local/lsws/$domain/html/robots.txt" <<END
-# User-agent: *
-# Disallow: /wp-admin/
-# Allow: /wp-admin/admin-ajax.php
-# END
-
 echo "Phân quyền website $domain"
 chown -R "$User_name_vhost":"$User_name_vhost" /usr/local/lsws/"$domain"/html
 /usr/local/lsws/bin/lswsctrl restart >/dev/null 2>&1

@@ -3,33 +3,72 @@ from app.models.pem_request import PemRequest
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2.service_account import Credentials
-from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError
+from botocore.exceptions import NoCredentialsError, PartialCredentialsError, ClientError, WaiterError
 from datetime import datetime
 from fastapi import HTTPException
 import requests
 import random
 import time
 import boto3 
+import json
+from dotenv import load_dotenv
+import os
+from app.constants.constants import ec2_params
 
-api_token = 'Ih9Y3wmkGYvXXgOeVJ-h_DWTl7998POqqK9ijBb5'
-admin_accounts = [
-    {"team": "seo-3", "account_id": "3b982bfb6af524090fb397e022006c1e", "email": "roylevn215@gmail.com"},
-    # Other admin accounts here...
-]
-
-headers = {
-    'Authorization': f'Bearer {api_token}',
-    'Content-Type': 'application/json'
-}
-
-items_db = []
+load_dotenv()
+api_token_cf = os.getenv('API_TOKEN_CF')
+AWS_ACCESS_KEY=os.getenv('AWS_ACCESS_KEY')
+AWS_SECRET=os.getenv('AWS_SECRET')
 
 class AdminController:
+    @staticmethod
+    def send_to_telegram(valuesGG):
+        # Cấu hình Bot và Chat ID
+        BOT_TOKEN = "7778868331:AAFW4Hp6eNtHsHE8O46VwxQpbL_2U-hkk5c"
+        CHAT_ID = "-4705994114"
+
+        # Định dạng dữ liệu từ valuesGG
+        formatted_security_groups = "\n".join([f"--{sg}" for sg in valuesGG[0][12].split(", \n    --")])
+        message = f"""
+        *{valuesGG[0][3]} team vừa tạo một EC2 Server*
+        **Instance Information:**
+        - Date: {valuesGG[0][0]}
+        - Region: {valuesGG[0][1]}
+        - Instance Name: {valuesGG[0][2]}
+        - Instance ID: {valuesGG[0][4]}
+        - Elastic IP: {valuesGG[0][5]}
+        - Private IP: {valuesGG[0][6]}
+        - Instance Type: {valuesGG[0][7]}
+        - CPU & RAM: {valuesGG[0][8]}
+        - Status: {valuesGG[0][9]}
+        - Disk Size: {valuesGG[0][10]}
+        - Public IP: {valuesGG[0][11]}
+        - Security Groups: 
+            {formatted_security_groups}
+        """
+
+        # URL API Telegram
+        url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+
+        # Payload cho API Telegram
+        payload = {
+            "chat_id": CHAT_ID,
+            "text": message,
+            "parse_mode": "Markdown"  # Để định dạng text
+        }
+
+        # Gửi yêu cầu POST tới Telegram
+        response = requests.post(url, json=payload)
+
+        if response.status_code == 200:
+            print("Thông tin đã được gửi tới nhóm Telegram thành công.")
+        else:
+            print(f"Lỗi khi gửi tin nhắn: {response.status_code}, {response.text}")
     @staticmethod
     def append_to_google_sheet(values):
         try:
             # Thông tin Google Sheets
-            SPREADSHEET_ID = '1D0fw1ws_ov04IO0PNRV3CbgrH6AvWhIqXRKoTLFRpTM'  # Thay bằng ID của Google Sheet
+            SPREADSHEET_ID = '1D0fw1ws_ov04IO0PNRV3CbgrH6AvWhIqXRKoTLFRpTM'
             SHEET_NAME = 'server'  # Thay bằng tên sheet
 
             # Load credentials từ file service account
@@ -65,168 +104,171 @@ class AdminController:
                 raise e
     @staticmethod
     async def add_server_domains(request: ServerRequest):
+        print(f"0===> Instance create process start")
         result = {"success": 0, "fail": {"count": 0, "messages": []}}
         current_date = datetime.now().strftime("'%d/%m/%Y")
         try:
-            time.sleep(3)
-            data_result = {
-                "status": "success",
-                "result": {
-                    "instance_id": "i-0d7eae5958c702ed6",
-                    "instance_name": "Eting_Testing_1732600915",
-                    "region": "ap-northeast-1",
-                    "elastic_ip": "43.206.47.57",
-                    "private_ip_address": "172.31.7.247",
-                    "public_ip_address": "54.250.71.110",
-                    "instance_type": "t2.micro",
-                    "cpu_cores": 1,
-                    "threads_per_core": 1,
-                    "ram": "1 GiB (t2.micro)",
-                    "disk_size": "8 GiB",
-                    "security_groups": [
-                        "default"
-                    ],
-                    "message": "EC2 instance created successfully."
-                }
-            }
-            valuesGG = [
-                [
-                    current_date,
-                    data_result["result"]["region"],
-                    data_result["result"]["instance_name"],
-                    'seo3-wptt-05',
-                    data_result["result"]["instance_id"],
-                    data_result["result"]["elastic_ip"],
-                    data_result["result"]["private_ip_address"],
-                    data_result["result"]["instance_type"],
-                    f'{data_result["result"]["cpu_cores"]}&{data_result["result"]["ram"]}',
-                    'running',
-                    data_result["result"]["disk_size"],
-                    data_result["result"]["public_ip_address"],
-                    ", ".join(data_result["result"]["security_groups"]),  # Chuyển đổi danh sách thành chuỗi
-                    'Not yet',
-                ]
-            ]
-            AdminController.append_to_google_sheet(valuesGG)
+            ec2_param = next((item for item in ec2_params if item["team"] == request.team), None)
 
+            # Định nghĩa các tham số
+            region_name = ec2_param["region"]
+            subnet_id = ec2_param["subnet_id"]
+            security_group_ids = ec2_param["security_group_id"]
+            key_name = ec2_param["key_name"]
+            instance_type = ec2_param["instance_type"]
+            ami_id = ec2_param["ami_id"]
+            instance_name = f"pro-seoadmin-{ec2_param['region']}-ec2-{ec2_param['team']}-{int(time.time())}"
+
+            # Tạo instance param
+            instance_params = {
+                "ImageId": ami_id,
+                "InstanceType": instance_type,
+                "MinCount": 1,
+                "MaxCount": 1,
+                "KeyName": key_name,
+                "NetworkInterfaces": [
+                    {
+                        "SubnetId": subnet_id,
+                        "DeviceIndex": 0,
+                        "AssociatePublicIpAddress": True,
+                        "Groups": security_group_ids,
+                    }
+                ],
+                "BlockDeviceMappings": [
+                    {
+                        "DeviceName": "/dev/xvda",
+                        "Ebs": {
+                            "VolumeSize": 120,
+                            "VolumeType": "gp3",
+                            "DeleteOnTermination": True
+                        }
+                    }
+                ],
+                "TagSpecifications": [
+                    {
+                        "ResourceType": "instance",
+                        "Tags": [{"Key": "Name", "Value": instance_name}]
+                    }
+                ]
+            }
 
             ec2_client = boto3.client(
                 'ec2',
-                aws_access_key_id='', 
-                aws_secret_access_key='', 
-                region_name='ap-northeast-1' 
+                aws_access_key_id=AWS_ACCESS_KEY, 
+                aws_secret_access_key=AWS_SECRET, 
+                region_name=region_name
             )
-            timestamp = int(time.time())
-            instance_name = f"Eting_testing_{timestamp}"
 
-            # Lấy KeyName từ request
-            key_name = f"{request.team}_{timestamp}"
-            if not key_name:
-                raise ValueError("KeyName is required in the request.")
-            # Kiểm tra KeyPair tồn tại
-            if not AdminController.check_keypair_exists(ec2_client, key_name):
-                # Nếu không tồn tại, tạo KeyPair mới
-                key_pair = ec2_client.create_key_pair(KeyName=key_name)
-                private_key_content = key_pair['KeyMaterial']
+            # Bước 1: Tạo EC2 instance
+            response = ec2_client.run_instances(**instance_params)
+            # print(f"0===> Debug: \n{json.dumps(response, indent=4)}")
 
-                # Lưu hoặc sử dụng private key (tùy trường hợp)
-                print(f"New Key Pair created. Private Key:\n{private_key_content}")
+            instance = response['Instances'][0]
+            instance_id = instance['InstanceId']
+
+            print(f"1===> Instance created with ID: {instance_id}")
+
+            # Chờ instance sẵn sàng
+            ec2_client.get_waiter('instance_running').wait(InstanceIds=[instance_id])
+            print(f"2===> Instance with ID: {instance_id} is running.")
+            # Tạo Elastic IP
+            elastic_ip_response = ec2_client.allocate_address(Domain='vpc')
+            elastic_ip = elastic_ip_response['PublicIp']
+            allocation_id = elastic_ip_response['AllocationId']
+
+            # Gán Elastic IP cho instance
+            ec2_client.associate_address(InstanceId=instance_id, AllocationId=allocation_id)
+            print(f"3===> Tạo và gán Elastic IP cho instance {instance_id} is success.")
+
+
+            # Lấy thông tin chi tiết về instance và EBS volume
+            instance_details = ec2_client.describe_instances(InstanceIds=[instance_id])['Reservations'][0]['Instances'][0]
+            volume_id = instance_details['BlockDeviceMappings'][0]['Ebs']['VolumeId']
+            volume_details = ec2_client.describe_volumes(VolumeIds=[volume_id])['Volumes'][0]
+            disk_size = volume_details['Size']
+
+            # Tạo đối tượng kết quả trả về
+            resultObj = {
+                "status": "success",
+                "result": {
+                    "instance_id": instance_id,
+                    "instance_name": instance_name,
+                    "region": region_name,
+                    "elastic_ip": elastic_ip,
+                    "private_ip_address": instance_details['PrivateIpAddress'],
+                    "public_ip_address": instance_details.get('PublicIpAddress', "N/A"),
+                    "instance_type": instance_details['InstanceType'],
+                    "cpu_cores": instance_details['CpuOptions']['CoreCount'],
+                    "threads_per_core": instance_details['CpuOptions']['ThreadsPerCore'],
+                    "ram": "8 GiB",
+                    "disk_size": f"{disk_size} GiB",
+                    "security_groups": [sg['GroupName'] for sg in instance_details['SecurityGroups']],
+                    "message": "EC2 instance created successfully."
+                }
+            }
+
+            # In đối tượng result ra màn hình console
+            print(f"4===> EC2 Instance Details: \n{json.dumps(resultObj, indent=4)}")
+
+            # Chuẩn bị kết quả đưa qua Google sheet
+            valuesGG = [
+                [
+                    current_date,
+                    resultObj["result"]["region"],
+                    resultObj["result"]["instance_name"],
+                    request.team.upper(),
+                    resultObj["result"]["instance_id"],
+                    resultObj["result"]["elastic_ip"],
+                    resultObj["result"]["private_ip_address"],
+                    resultObj["result"]["instance_type"],
+                    f'{resultObj["result"]["cpu_cores"]}CPU & 8Gib',
+                    'running',
+                    resultObj["result"]["disk_size"],
+                    resultObj["result"]["public_ip_address"],
+                    ",\n ".join(resultObj["result"]["security_groups"]),
+                    'Not yet',
+                ]
+            ]
+
+            AdminController.append_to_google_sheet(valuesGG)
+            print("5===> Đã chuyển thông tin sang Google Sheet.")
+
+            # Gọi hàm gửi tin nhắn
+            AdminController.send_to_telegram(valuesGG)
+            print("5===> Đã chuyển thông tin sang Telegram.")
+
 
             result["success"] += 1
-            # result["fail"]["count"] += 1
-            # result["fail"]["messages"].append("AWS bị lỗi gì đó")
             return {
                 "status": "success",
                 "result": result,
                 "data": {
                     "key_name": key_name,
-                    "private_key": private_key_content,
-                    "public_ip": data_result["result"]["public_ip_address"],
+                    "public_ip": elastic_ip,
                 },
             }
-
-
-            # # Tạo instance
-            # instance_name = f"Eting_Testing_{int(time.time())}"
-            # instance_params = {
-            #     "ImageId": "ami-0ac6b9b2908f3e20d",  # AMI ID phù hợp
-            #     "InstanceType": "t2.micro",
-            #     "MinCount": 1,
-            #     "MaxCount": 1,
-            #     "KeyName": key_name,
-            #     "TagSpecifications": [
-            #         {
-            #             "ResourceType": "instance",
-            #             "Tags": [{"Key": "Name", "Value": instance_name}]
-            #         }
-            #     ]
-            # }
-
-            # response = ec2_client.run_instances(**instance_params)
-            # instance = response['Instances'][0]
-            # instance_id = instance['InstanceId']
-
-            # # Chờ instance sẵn sàng
-            # ec2_client.get_waiter('instance_running').wait(InstanceIds=[instance_id])
-
-            # # Lấy thông tin chi tiết về instance
-            # instance_details = ec2_client.describe_instances(InstanceIds=[instance_id])['Reservations'][0]['Instances'][0]
-
-            # # Lấy thông tin EBS volume
-            # volume_id = instance_details['BlockDeviceMappings'][0]['Ebs']['VolumeId']
-            # volume_details = ec2_client.describe_volumes(VolumeIds=[volume_id])['Volumes'][0]
-            # disk_size = volume_details['Size']
-
-            # # Gán Elastic IP
-            # eip_allocation = ec2_client.allocate_address(Domain='vpc')
-            # ec2_client.associate_address(InstanceId=instance_id, AllocationId=eip_allocation['AllocationId'])
-            # elastic_ip = eip_allocation['PublicIp']
-
-
-            # resultObj = {
-            #     "status": "success",
-            #     "result": {
-            #         "instance_id": instance_id,
-            #         "instance_name": instance_name,
-            #         "region": "ap-northeast-1",
-            #         "elastic_ip": elastic_ip,
-            #         "private_ip_address": instance_details['PrivateIpAddress'],
-            #         "public_ip_address": instance_details.get('PublicIpAddress', "N/A"),
-            #         "instance_type": instance_details['InstanceType'],
-            #         "cpu_cores": instance_details['CpuOptions']['CoreCount'],
-            #         "threads_per_core": instance_details['CpuOptions']['ThreadsPerCore'],
-            #         "ram": "1 GiB (t2.micro)",  # Tùy chỉnh theo loại instance
-            #         "disk_size": f"{disk_size} GiB",
-            #         "security_groups": [sg['GroupName'] for sg in instance_details['SecurityGroups']],
-            #         "message": "EC2 instance created successfully."
-            #     }
-            # }
-
-            # # In đối tượng result ra màn hình console
-            # print("EC2 Instance Details:")
-            # print(resultObj)
-
-            # Trả về đối tượng result
-            # return {"status": "success", "result": result, "data": data_result}
         
-
         except ClientError as e:
+            print(f"1-AWS Client Error: {str(e)}")     
             result["fail"]["count"] += 1
             result["fail"]["messages"].append(f"AWS Client Error: {str(e)}") 
         except NoCredentialsError: 
+            print(f"2-NoCredentialsError Error: {str(e)}")     
             result["fail"]["count"] += 1
             result["fail"]["messages"].append("AWS credentials not found.")
-            print(f"2-AWS Client Error: {str(e)}")     
 
         except PartialCredentialsError: 
+            print(f"3-PartialCredentialsError Error: {str(e)}")   
             result["fail"]["count"] += 1
             result["fail"]["messages"].append("Incomplete AWS credentials.")
-            print(f"3-AWS Client Error: {str(e)}")   
         except Exception as e:
+            print(f"4-Exception Error: {str(e)}")   
             result["fail"]["count"] += 1
             result["fail"]["messages"].append(str(e))
-            print(f"4-AWS Client Error: {str(e)}")   
-
+        except WaiterError as e:
+            print(f"5-WaiterError Error: Instance {instance_id} did not enter 'running' state.")
+            result["fail"]["count"] += 1
+            result["fail"]["messages"].append(str(e))
         return {"status": "error", "result": result}
     
     @staticmethod
@@ -242,8 +284,8 @@ class AdminController:
             key_name = f"{team_name}"
             ec2_client = boto3.client(
                 'ec2',
-                aws_access_key_id='', 
-                aws_secret_access_key='', 
+                aws_access_key_id=AWS_ACCESS_KEY, 
+                aws_secret_access_key=AWS_SECRET, 
                 region_name='ap-northeast-1' 
             )
             print(f"KeyPair created successfully.")
@@ -304,8 +346,8 @@ class AdminController:
             # Khởi tạo EC2 client
             ec2_client = boto3.client(
                 'ec2',
-                aws_access_key_id='',
-                aws_secret_access_key='',
+                aws_access_key_id=AWS_ACCESS_KEY,
+                aws_secret_access_key=AWS_SECRET,
                 region_name='ap-northeast-1'
             )
 
