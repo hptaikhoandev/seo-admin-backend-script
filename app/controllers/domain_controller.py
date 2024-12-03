@@ -59,6 +59,23 @@ headers_backend = {
 
 class DomainController:
     @staticmethod
+    def check_domain_exists(headers_cf, domain_name):
+        url_check = "https://api.cloudflare.com/client/v4/zones"
+        params = {
+            "name": domain_name,
+        }
+
+        response = requests.get(url_check, headers=headers_cf, params=params)
+        response_data = response.json()
+
+        if response_data.get("success"):
+            zones = response_data.get("result", [])
+            if zones:
+                print(f"Domain {domain_name} đã tồn tại trong Cloudflare.")
+                return True
+        print(f"Domain {domain_name} không tồn tại trong Cloudflare.")
+        return False    
+    @staticmethod
     async def fetch_accounts_from_api(team: str):
         params = {
             "page": 1,
@@ -112,6 +129,11 @@ class DomainController:
             max_retries = 1  # Số lần thử tối đa
             retry_count = 0
             while retry_count < max_retries:
+                if DomainController.check_domain_exists(headers_cf, domain_name=domain_data["name"]):
+                    print(f"Domain {domain_data['name']} đã tồn tại. Bỏ qua việc tạo.")
+                    resultMessage["fail"]["count"] += 1
+                    resultMessage["fail"]["messages"].append(f"{domain_data['name']} always exists.")
+                    break  # Dừng vòng lặp nếu domain đã tồn tại
                 domain_response = requests.post(url_cf, headers=headers_cf, json=domain_data)
                 domain_result = domain_response.json()
                 

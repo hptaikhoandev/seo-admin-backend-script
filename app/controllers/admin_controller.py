@@ -147,7 +147,10 @@ class AdminController:
                 "TagSpecifications": [
                     {
                         "ResourceType": "instance",
-                        "Tags": [{"Key": "Name", "Value": instance_name}]
+                        "Tags": [
+                            {"Key": "Name", "Value": instance_name},
+                            {"Key": "CostCenter", "Value": request.team.upper()},
+                            ]
                     }
                 ]
             }

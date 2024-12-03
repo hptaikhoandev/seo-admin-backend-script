@@ -12,7 +12,7 @@ ec2_params = [
                 "sg-0bb8718d8a6680ff1",
             ],
         "key_name": "pro-seoadmin-ap-northeast-1-key-pair-admin",
-        "instance_type": "c5.xlarge",
+        "instance_type": "t2.micro",
         "ami_id": "ami-005fb99af5d106c31",
     },
     {
