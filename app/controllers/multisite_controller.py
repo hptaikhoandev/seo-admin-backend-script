@@ -91,6 +91,7 @@ class MultisiteController:
         result = {"success": 0, "fail": {"count": 0, "messages": []}} 
         for domain in request.domains:
             try:
+                print(f"Creating WP site for: {domain}")
                 connected_user = None  # Lưu user kết nối thành công
                 connection_errors = []  # Lưu danh sách lỗi trong quá trình kết nối
                 key_name = f"{TEAM}_{SERVER_IP}"
