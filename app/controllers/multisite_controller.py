@@ -105,7 +105,7 @@ class MultisiteController:
                         ssh_client.connect(SERVER_IP, username=USERNAME, pkey=private_key)
                         connected_user = USERNAME
                         print(f"Connected successfully with username: {USERNAME}")
-                        break  # Thoát vòng lặp khi kết nối thành công
+                        break
                     except paramiko.AuthenticationException:
                         print(f"Authentication failed for username: {USERNAME}")
                         connection_errors.append(f"Authentication failed for username: {USERNAME}")

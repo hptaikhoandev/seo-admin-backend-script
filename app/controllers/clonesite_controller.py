@@ -84,12 +84,14 @@ class ClonesiteController:
     async def clone_site(request: ClonesiteRequest):
         SERVER_IP = request.server_ip
         TEAM = request.team
-        USERNAME = "ubuntu"
+        USERNAMES = ["ubuntu", "ec2-user"]
         LOCAL_SCRIPT_PATH = "app/script/wptt-sao-chep-website.sh"
         REMOTE_SCRIPT_PATH = "/tmp/remote_wptt-sao-chep-website.sh"
         result = {"success": 0, "fail": {"count": 0, "messages": []}}
 
         try:
+            connected_user = None  # Lưu user kết nối thành công
+            connection_errors = []  # Lưu danh sách lỗi trong quá trình kết nối
             key_name = f"{TEAM}_{SERVER_IP}"
             private_key_content = await ClonesiteController.fetch_private_key_from_api(key_name)
 
@@ -99,8 +101,28 @@ class ClonesiteController:
             ssh_client = paramiko.SSHClient()
             ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-            # Connect to the server using the private key
-            ssh_client.connect(SERVER_IP, username=USERNAME, pkey=private_key)
+            # Thử kết nối với từng user
+            for USERNAME in USERNAMES:
+                try:
+                    ssh_client.connect(SERVER_IP, username=USERNAME, pkey=private_key)
+                    connected_user = USERNAME
+                    print(f"Connected successfully with username: {USERNAME}")
+                    break
+                except paramiko.AuthenticationException:
+                    print(f"Authentication failed for username: {USERNAME}")
+                    connection_errors.append(f"Authentication failed for username: {USERNAME}")
+                except Exception as e:
+                    print(f"Error connecting with username {USERNAME}: {str(e)}")
+                    connection_errors.append(str(e))
+
+            # Kiểm tra nếu không có kết nối thành công
+            if not connected_user:
+                # Kiểm tra nếu toàn bộ lỗi đều là Errno 13
+                if all("Errno 13" in error for error in connection_errors):
+                    raise PermissionError("All attempts failed with Errno 13: Permission denied")
+                else:
+                    raise Exception("All attempts to connect failed with different errors")
+
 
             sftp = ssh_client.open_sftp()
             sftp.put(LOCAL_SCRIPT_PATH, REMOTE_SCRIPT_PATH)
