@@ -1,4 +1,4 @@
-from app.models.multisite_request import MultisiteRequest
+from app.models.destroysite_request import DestroysiteRequest
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from google.oauth2.service_account import Credentials
@@ -18,7 +18,7 @@ headers_backend = {
     'Content-Type': 'application/json'
 }
 
-class MultisiteController:
+class DestroysiteController:
     @staticmethod
     async def fetch_private_key_from_api(key_name: str):
         params = {
@@ -82,19 +82,19 @@ class MultisiteController:
             print(f"An error occurred: {error}")
             
     @staticmethod
-    async def multi_site(request: MultisiteRequest):
+    async def destroy_site(request: DestroysiteRequest):
         SERVER_IP = request.server_ip
         TEAM = request.team
         USERNAMES = ["ubuntu", "ec2-user"]
-        LOCAL_SCRIPT_PATH = "app/script/auto_add_multiple_wp_sites.sh"
-        REMOTE_SCRIPT_PATH = "/tmp/remote_auto_add_multiple_wp_sites.sh"
+        LOCAL_SCRIPT_PATH = "app/script/wptt-clean-ma-nguon.sh"
+        REMOTE_SCRIPT_PATH = "/tmp/remote_wptt-clean-ma-nguon.sh"
         result = {"success": 0, "fail": {"count": 0, "messages": []}} 
         for domain in request.domains:
             try:
                 connected_user = None  # Lưu user kết nối thành công
                 connection_errors = []  # Lưu danh sách lỗi trong quá trình kết nối
                 key_name = f"{TEAM}_{SERVER_IP}"
-                private_key_content = await MultisiteController.fetch_private_key_from_api(key_name)
+                private_key_content = await DestroysiteController.fetch_private_key_from_api(key_name)
                 private_key = paramiko.RSAKey.from_private_key(io.StringIO(private_key_content))
                 ssh_client = paramiko.SSHClient()
                 ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -140,7 +140,7 @@ class MultisiteController:
 
                 else:
                     result["success"] += 1
-                    MultisiteController.append_to_google_sheet(domain, SERVER_IP)
+                    # DestroysiteController.append_to_google_sheet(domain, SERVER_IP)
             except Exception as e:
                 result["fail"]["count"] += 1
                 result["fail"]["messages"].append(f"{domain}: {str(e)}")
