@@ -85,25 +85,44 @@ class MultisiteController:
     async def multi_site(request: MultisiteRequest):
         SERVER_IP = request.server_ip
         TEAM = request.team
-        USERNAME = "ubuntu"
+        USERNAMES = ["ubuntu", "ec2-user"]
         LOCAL_SCRIPT_PATH = "app/script/auto_add_multiple_wp_sites.sh"
         REMOTE_SCRIPT_PATH = "/tmp/remote_auto_add_multiple_wp_sites.sh"
         result = {"success": 0, "fail": {"count": 0, "messages": []}} 
         for domain in request.domains:
             try:
+                connected_user = None  # Lưu user kết nối thành công
+                connection_errors = []  # Lưu danh sách lỗi trong quá trình kết nối
                 key_name = f"{TEAM}_{SERVER_IP}"
                 private_key_content = await MultisiteController.fetch_private_key_from_api(key_name)
-
-                # Load private key content into paramiko.RSAKey
                 private_key = paramiko.RSAKey.from_private_key(io.StringIO(private_key_content))
-
                 ssh_client = paramiko.SSHClient()
                 ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                print(f"Fetched private key content: \n {private_key_content}")
 
-                # Connect to the server using the private key
-                ssh_client.connect(SERVER_IP, username=USERNAME, pkey=private_key)
+                # # Connect to the server using the private key
+                # ssh_client.connect(SERVER_IP, username=USERNAME, pkey=private_key)
+                # Thử kết nối với từng user
+                for USERNAME in USERNAMES:
+                    try:
+                        ssh_client.connect(SERVER_IP, username=USERNAME, pkey=private_key)
+                        connected_user = USERNAME
+                        print(f"Connected successfully with username: {USERNAME}")
+                        break  # Thoát vòng lặp khi kết nối thành công
+                    except paramiko.AuthenticationException:
+                        print(f"Authentication failed for username: {USERNAME}")
+                        connection_errors.append(f"Authentication failed for username: {USERNAME}")
+                    except Exception as e:
+                        print(f"Error connecting with username {USERNAME}: {str(e)}")
+                        connection_errors.append(str(e))
 
-
+                # Kiểm tra nếu không có kết nối thành công
+                if not connected_user:
+                    # Kiểm tra nếu toàn bộ lỗi đều là Errno 13
+                    if all("Errno 13" in error for error in connection_errors):
+                        raise PermissionError("All attempts failed with Errno 13: Permission denied")
+                    else:
+                        raise Exception("All attempts to connect failed with different errors")
 
                 sftp = ssh_client.open_sftp()
                 sftp.put(LOCAL_SCRIPT_PATH, REMOTE_SCRIPT_PATH)
@@ -120,11 +139,15 @@ class MultisiteController:
                 if error.strip():
                     result["fail"]["count"] += 1
                     result["fail"]["messages"].append(f"{domain}: {error.strip()}")
+                    print(f"1-SSH Client Error: {error.strip()}") 
+
                 else:
                     result["success"] += 1
                     MultisiteController.append_to_google_sheet(domain, SERVER_IP)
             except Exception as e:
                 result["fail"]["count"] += 1
                 result["fail"]["messages"].append(f"{domain}: {str(e)}")
+                print(f"2-SSH Client Error: {str(e)}") 
+
         return {"status": "success", "result": result}
 
