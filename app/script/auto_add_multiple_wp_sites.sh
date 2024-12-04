@@ -319,7 +319,10 @@ echo "alias 11='wptangtoc-user'" >> /usr/local/lsws/$domain/.bashrc
 chown $USER:$USER /usr/local/lsws/"$domain"/html/.htaccess
 
 # khong cho login quyen tai khoan trực tiếp chỉ sử dụng php exec
-usermod $USER -s /sbin/nologin
+# usermod $USER -s /sbin/nologin
+if [[ $(getent passwd $USER | cut -d: -f7) != "/sbin/nologin" ]]; then
+    sudo usermod $USER -s /sbin/nologin
+fi
 
 if [[ -f /usr/local/lsws/$domain/html/index.html ]];then
 sed -i "s/domain.com/$domain/g" /usr/local/lsws/"$domain"/html/index.html
