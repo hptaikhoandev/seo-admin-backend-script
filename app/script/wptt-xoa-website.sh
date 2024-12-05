@@ -10,11 +10,11 @@ fi
 NAME=$1
 doi_so=$1
 
-# Kiểm tra nếu cả NAME và NAME2 tồn tại
+# Kiểm tra nếu cả NAME không tồn tại
 pathcheck_name1="/etc/wptt/vhost/.$NAME.conf"
 
-if [[ -f "$pathcheck_name1" ]]; then
-  echo "Error: Tên miền $NAME đều tồn tại trên hệ thống" >&2
+if [[ ! -f "$pathcheck_name1" ]]; then
+  echo "Error: Tên miền $NAME không tồn tại trên hệ thống" >&2
   exit 1
 fi
 
