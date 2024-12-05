@@ -86,8 +86,10 @@ class DestroysiteController:
         SERVER_IP = request.server_ip
         TEAM = request.team
         USERNAMES = ["ubuntu", "ec2-user"]
-        LOCAL_SCRIPT_PATH = "app/script/wptt-clean-ma-nguon.sh"
-        REMOTE_SCRIPT_PATH = "/tmp/remote_wptt-clean-ma-nguon.sh"
+        LOCAL_SCRIPT_SAOLUU_PATH = "app/script/wptt-saoluu.sh"
+        REMOTE_SCRIPT_SAOLUU_PATH = "/tmp/remote_wptt-saoluu.sh"
+        LOCAL_SCRIPT_XOA_PATH = "app/script/wptt-xoa-website.sh"
+        REMOTE_SCRIPT_XOA_PATH = "/tmp/remote_wptt-xoa-website.sh"
         result = {"success": 0, "fail": {"count": 0, "messages": []}} 
         for domain in request.domains:
             try:
@@ -122,12 +124,18 @@ class DestroysiteController:
                         raise Exception("All attempts to connect failed with different errors")
 
                 sftp = ssh_client.open_sftp()
-                sftp.put(LOCAL_SCRIPT_PATH, REMOTE_SCRIPT_PATH)
-                sftp.chmod(REMOTE_SCRIPT_PATH, 0o755)
+                sftp.put(LOCAL_SCRIPT_SAOLUU_PATH, REMOTE_SCRIPT_SAOLUU_PATH)
+                sftp.put(LOCAL_SCRIPT_XOA_PATH, REMOTE_SCRIPT_XOA_PATH)
+                sftp.chmod(REMOTE_SCRIPT_SAOLUU_PATH, 0o755)
+                sftp.chmod(REMOTE_SCRIPT_XOA_PATH, 0o755)
                 sftp.close()
-
-                command = f"sudo bash {REMOTE_SCRIPT_PATH} {domain}"
-                stdin, stdout, stderr = ssh_client.exec_command(command)
+                # STEP 1
+                command_1 = f"sudo bash {REMOTE_SCRIPT_SAOLUU_PATH} {domain}"
+                stdin, stdout, stderr = ssh_client.exec_command(command_1)
+                
+                # STEP 2
+                command_2 = f"sudo bash {REMOTE_SCRIPT_XOA_PATH} {domain}"
+                stdin, stdout, stderr = ssh_client.exec_command(command_2)
 
                 output = stdout.read().decode()
                 error = stderr.read().decode()
