@@ -6,6 +6,7 @@ from app.routers import redirect_router
 from app.routers import clonesite_router
 from app.routers import multisite_router
 from app.routers import admin_router
+from app.routers import dashboard_router
 from app.routers import destroysite_router
 from app.routers import tracking_link_router
 
@@ -28,6 +29,7 @@ app.include_router(clonesite_router.router)
 app.include_router(multisite_router.router)
 app.include_router(destroysite_router.router)
 app.include_router(admin_router.router)
+app.include_router(dashboard_router.router)
 app.include_router(tracking_link_router.router)
 
 # Root route

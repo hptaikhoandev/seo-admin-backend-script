@@ -17,3 +17,13 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 # async def add_domains(request: DomainRequest, credentials: HTTPAuthorizationCredentials = Depends(verify_token)):
 async def add_server_domains(request: ServerRequest):
     return await AdminController.add_server_domains(request)
+
+@router.post("/script/status-servers")
+# async def add_domains(request: DomainRequest, credentials: HTTPAuthorizationCredentials = Depends(verify_token)):
+async def status_servers(request: ServerRequest):
+    return await AdminController.status_servers(request)
+
+@router.post("/script/transitions-server")
+# async def add_domains(request: DomainRequest, credentials: HTTPAuthorizationCredentials = Depends(verify_token)):
+async def transitions_server(request: ServerRequest):
+    return await AdminController.transitions_server(request)

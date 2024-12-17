@@ -126,27 +126,15 @@ class DomainController:
                 "jump_start": True
             }
             
-            max_retries = 1  # Số lần thử tối đa
-            retry_count = 0
-            while retry_count < max_retries:
-                if DomainController.check_domain_exists(headers_cf, domain_name=domain_data["name"]):
-                    print(f"Domain {domain_data['name']} đã tồn tại. Bỏ qua việc tạo.")
-                    resultMessage["fail"]["count"] += 1
-                    resultMessage["fail"]["messages"].append(f"{domain_data['name']} always exists.")
-                    break  # Dừng vòng lặp nếu domain đã tồn tại
-                domain_response = requests.post(url_cf, headers=headers_cf, json=domain_data)
-                domain_result = domain_response.json()
+            domain_result = {"success": False}
+            if DomainController.check_domain_exists(headers_cf, domain_name=domain_data["name"]):
+                print(f"Domain {domain_data['name']} đã tồn tại. Bỏ qua việc tạo.")
+                resultMessage["fail"]["count"] += 1
+                resultMessage["fail"]["messages"].append(f"{domain_data['name']} always exists.")
+                continue  # Bỏ qua vòng lặp này và tiếp tục với domain tiếp theo
+            domain_response = requests.post(url_cf, headers=headers_cf, json=domain_data)
+            domain_result = domain_response.json()
                 
-                if domain_result.get('success'):
-                    # Thành công, tiếp tục luồng chính
-                    break
-                else:
-                    print(f"domain_result===> {domain_result}")
-                    retry_count += 1                 
-                    if retry_count < max_retries:
-                        print(f"Retrying... Attempt {retry_count + 1} after 30 seconds")
-                        time.sleep(30)  # Chờ 30 giây trước khi thử lại
-
             # Nếu không thành công sau các lần thử
             if not domain_result.get('success'):
                 resultMessage["fail"]["count"] += 1

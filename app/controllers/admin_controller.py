@@ -164,7 +164,6 @@ class AdminController:
 
             # Bước 1: Tạo EC2 instance
             response = ec2_client.run_instances(**instance_params)
-            # print(f"0===> Debug: \n{json.dumps(response, indent=4)}")
 
             instance = response['Instances'][0]
             instance_id = instance['InstanceId']
@@ -396,5 +395,168 @@ class AdminController:
             print(f"5-Error: {str(e)}")
 
         return {"status": "error", "result": result}
+    @staticmethod
+    async def status_servers(request: ServerRequest):
+        result = {"success": 0, "fail": {"count": 0, "messages": []}}
+        try:
+            ec2_param = next((item for item in ec2_params if item["team"] == request.team), None)
+            # Định nghĩa các tham số
+            region_name = ec2_param["region"]
+
+            ec2_client = boto3.client(
+                'ec2',
+                aws_access_key_id=AWS_ACCESS_KEY, 
+                aws_secret_access_key=AWS_SECRET, 
+                region_name=region_name
+            )
+            # Gọi API AWS để tìm instance theo public IP address
+            response = ec2_client.describe_instances(
+                Filters=[{'Name': 'ip-address', 'Values': [request.server_ip]}]
+            )
+            
+            # Kiểm tra xem có instance nào được tìm thấy không
+            reservations = response.get('Reservations', [])
+            if not reservations or not reservations[0].get('Instances'):
+                # Không tìm thấy instance nào tương ứng với IP
+                result["fail"]["count"] += 1
+                result["fail"]["messages"].append(f"No instance found for IP: {request.server_ip}")
+                return {
+                    "status": "error",
+                    "result": result,
+                    "message": f"No instance associated with IP {request.server_ip}"
+                }
+
+            instance = reservations[0]['Instances'][0]
+            instance_state = instance.get('State', {}).get('Name')
+
+            # Trả về kết quả thành công
+            result["success"] += 1
+            return {
+                "status": "success",
+                "result": result,
+                "data": {
+                    "instance_state": instance_state,
+                }
+            }
+
+        except ClientError as e:
+            # Xử lý lỗi liên quan đến AWS
+            error_code = e.response.get('Error', {}).get('Code', 'Unknown')
+            if error_code == 'InvalidKeyPair.NotFound':
+                result["fail"]["count"] += 1
+                result["fail"]["messages"].append(f"1-AWS Client Error: {str(e)}")
+                print(f"1-AWS Client Error: {str(e)}")
+                return {"status": "error", "result": result}
+
+            else:
+                result["fail"]["count"] += 1
+                result["fail"]["messages"].append(f"AWS Client Error: {str(e)}")
+                print(f"2-AWS Client Error: {str(e)}")
+
+        except NoCredentialsError:
+            result["fail"]["count"] += 1
+            result["fail"]["messages"].append("AWS credentials not found.")
+            print(f"3-AWS Client Error: No AWS credentials found.")
+
+        except PartialCredentialsError:
+            result["fail"]["count"] += 1
+            result["fail"]["messages"].append("Incomplete AWS credentials.")
+            print(f"4-AWS Client Error: Incomplete AWS credentials.")
+
+        except Exception as e:
+            result["fail"]["count"] += 1
+            result["fail"]["messages"].append(str(e))
+            print(f"5-Error: {str(e)}")
+
+        return {"status": "error", "result": result}
     
+    @staticmethod
+    async def transitions_server(request: ServerRequest):
+        result = {"success": 0, "fail": {"count": 0, "messages": []}}
+        try:
+            # Tìm tham số EC2 theo team
+            ec2_param = next((item for item in ec2_params if item["team"] == request.team), None)
+            if not ec2_param:
+                raise Exception(f"No EC2 parameters found for team {request.team}")
+
+            region_name = ec2_param["region"]
+            server_ip = request.server_ip
+            transitions = request.transitions.lower()
+
+            if transitions not in ["start", "restart", "stop"]:
+                raise Exception(f"Invalid transition: {transitions}")
+
+            ec2_client = boto3.client(
+                'ec2',
+                aws_access_key_id=AWS_ACCESS_KEY,
+                aws_secret_access_key=AWS_SECRET,
+                region_name=region_name
+            )
+
+            # Gọi API AWS để tìm instance theo public IP address
+            response = ec2_client.describe_instances(
+                Filters=[{'Name': 'ip-address', 'Values': [server_ip]}]
+            )
+            instances = response.get("Reservations", [])
+            if not instances:
+                raise Exception(f"No instances found with IP {server_ip}")
+
+            instance_id = instances[0]["Instances"][0]["InstanceId"]
+
+            if transitions == "stop":
+                # Dừng instance
+                stop_response = ec2_client.stop_instances(InstanceIds=[instance_id])
+
+                # Chờ trạng thái chuyển sang "stopped"
+                waiter = ec2_client.get_waiter('instance_stopped')
+                waiter.wait(InstanceIds=[instance_id])
+                instance_state = "stopped"
+
+            elif transitions == "start":
+                # Khởi động instance
+                start_response = ec2_client.start_instances(InstanceIds=[instance_id])
+                waiter = ec2_client.get_waiter('instance_running')
+                waiter.wait(InstanceIds=[instance_id])
+                instance_state = "running"
+
+            elif transitions == "restart":
+                # Khởi động lại instance
+                reboot_response = ec2_client.reboot_instances(InstanceIds=[instance_id])
+                waiter = ec2_client.get_waiter('instance_running')
+                waiter.wait(InstanceIds=[instance_id])
+                instance_state = "running"
+
+            result["success"] += 1
+            return {
+                "status": "success",
+                "result": result,
+                "data": {
+                    "instance_state": instance_state,
+                }
+            }
+
+        except ClientError as e:
+            # Xử lý lỗi liên quan đến AWS
+            error_code = e.response.get('Error', {}).get('Code', 'Unknown')
+            result["fail"]["count"] += 1
+            result["fail"]["messages"].append(f"AWS Client Error: {str(e)}")
+            print(f"AWS Client Error: {str(e)}")
+
+        except NoCredentialsError:
+            result["fail"]["count"] += 1
+            result["fail"]["messages"].append("AWS credentials not found.")
+            print(f"AWS Client Error: No AWS credentials found.")
+
+        except PartialCredentialsError:
+            result["fail"]["count"] += 1
+            result["fail"]["messages"].append("Incomplete AWS credentials.")
+            print(f"AWS Client Error: Incomplete AWS credentials.")
+
+        except Exception as e:
+            result["fail"]["count"] += 1
+            result["fail"]["messages"].append(str(e))
+            print(f"Error: {str(e)}")
+
+        return {"status": "error", "result": result}
+
     

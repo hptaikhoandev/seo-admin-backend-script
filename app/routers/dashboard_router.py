@@ -1,8 +1,7 @@
-from fastapi import APIRouter, HTTPException, FastAPI, Depends, status
+from fastapi import APIRouter, HTTPException, FastAPI, Depends, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.controllers.clonesite_controller import ClonesiteController
-from app.models.clonesite_request import ClonesiteRequest
-
+from app.controllers.dashboard_controller import DashboardController
+from app.models.dashboard_request import DashboardRequest
 
 router = APIRouter()
 security = HTTPBearer()
@@ -14,8 +13,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
             detail="Invalid or missing token",
         )
 
-@router.post("/script/clone-site")
+@router.get("/script/count-domains")
 # async def add_domains(request: DomainRequest, credentials: HTTPAuthorizationCredentials = Depends(verify_token)):
-async def clone_site(request: ClonesiteRequest):
-    return await ClonesiteController.clone_site(request)
-
+async def count_domains(server_ip: str = Query(...), team: str = Query(...)):
+    return await DashboardController.count_domains(server_ip, team)

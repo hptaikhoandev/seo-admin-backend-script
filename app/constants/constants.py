@@ -69,7 +69,6 @@ ec2_params = [
                 "sg-02471248ad33f40cc",
                 "sg-0b703ae78296375cd",
                 "sg-0d78adeff861d762f",
-                "sg-03443913bf2f3f13d",
             ],
         "key_name": "pro-seoadmin-ap-southeast-2-key-pair-seo",
         "instance_type": "c5.xlarge",
