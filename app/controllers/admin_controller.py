@@ -118,6 +118,7 @@ class AdminController:
             instance_type = ec2_param["instance_type"]
             ami_id = ec2_param["ami_id"]
             instance_name = f"pro-seoadmin-{ec2_param['region']}-ec2-{ec2_param['team']}-{int(time.time())}"
+            tag_value = f"{request.team.split('-')[0].upper()}-{request.team.split('-')[1].zfill(2)}"
 
             # Tạo instance param
             instance_params = {
@@ -149,7 +150,7 @@ class AdminController:
                         "ResourceType": "instance",
                         "Tags": [
                             {"Key": "Name", "Value": instance_name},
-                            {"Key": "CostCenter", "Value": request.team.upper()},
+                            {"Key": "CostCenter", "Value": tag_value},
                             ]
                     }
                 ]
