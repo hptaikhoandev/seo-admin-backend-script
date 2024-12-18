@@ -4,7 +4,6 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: "seo-admin-backend_script_${TIMESTAMP}"
-    network_mode: "host"
     ports:
       - '8000:8000'
     volumes:
