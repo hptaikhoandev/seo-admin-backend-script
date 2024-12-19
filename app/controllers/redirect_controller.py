@@ -3,19 +3,18 @@ from fastapi import HTTPException
 import requests
 import random
 import time
+from dotenv import load_dotenv
+import os
 
-api_token = 'Ih9Y3wmkGYvXXgOeVJ-h_DWTl7998POqqK9ijBb5'
-admin_accounts = [
-    {"team": "seo-3", "account_id": "3b982bfb6af524090fb397e022006c1e", "email": "roylevn215@gmail.com"},
-    # Other admin accounts here...
-]
+# Xóa cache của biến môi trường
+os.environ.clear()
+load_dotenv()
+api_token_cf = os.getenv('API_TOKEN_CF')
 
 headers = {
-    'Authorization': f'Bearer {api_token}',
+    'Authorization': f'Bearer {api_token_cf}',
     'Content-Type': 'application/json'
 }
-
-items_db = []
 
 class RedirectController:
     @staticmethod
@@ -35,6 +34,8 @@ class RedirectController:
             return None
     @staticmethod
     async def create_redirect(request: RedirectRequest):
+        print(f"====>xxx222  {api_token_cf}")
+
         result = {"success": 0, "fail": {"count": 0, "messages": []}}
         # Kiểm tra nếu số lượng phần tử của source_domains và target_domains không bằng nhau
         if len(request.source_domains) != len(request.target_domains):
@@ -56,29 +57,14 @@ class RedirectController:
         id = option['id']
 
         for index, domain in enumerate(request.source_domains):
-            # Thử lại tối đa 3 lần để lấy zone_id
-            max_retries = 1
-            retry_count = 0
             zone_id = None
-
-            while retry_count < max_retries:
-                zone_id = RedirectController.get_zone_id(domain)
-                if zone_id:
-                    break  # Thoát vòng lặp nếu lấy zone_id thành công
-                else:
-                    retry_count += 1
-                    if retry_count < max_retries:
-                        print(f"Attempt {retry_count} failed for {domain}, retrying in 30 seconds...")
-                        time.sleep(30)  # Đợi 30 giây trước khi thử lại
-                    else:
-                        print(f"Failed to retrieve zone_id for {domain} after {max_retries} attempts.")
-                        result["fail"]["count"] += 1
-                        fail_message = "chưa đăng ký tên miền với Cloudflare"
-                        result["fail"]["messages"].append(f"{domain}: {fail_message}")
-                        continue  # Chuyển sang domain tiếp theo nếu đã hết số lần thử
-
+            zone_id = RedirectController.get_zone_id(domain)
             # Tiếp tục xử lý các phần còn lại nếu zone_id được lấy thành công
             if not zone_id:
+                print(f"Domains not registered with Cloudflare: {domain}")
+                result["fail"]["count"] += 1
+                fail_message = "chưa đăng ký tên miền với Cloudflare"
+                result["fail"]["messages"].append(f"{domain}: {fail_message}")
                 continue  # Bỏ qua domain hiện tại nếu không thể lấy được zone_id sau 3 lần thử
 
             # Cloudflare API endpoint to get Page Rules
