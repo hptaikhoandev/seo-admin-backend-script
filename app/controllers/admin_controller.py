@@ -15,6 +15,8 @@ from dotenv import load_dotenv
 import os
 from app.constants.constants import ec2_params
 
+# Xóa cache của biến môi trường
+os.environ.clear()
 load_dotenv()
 api_token_cf = os.getenv('API_TOKEN_CF')
 AWS_ACCESS_KEY=os.getenv('AWS_ACCESS_KEY')
@@ -109,6 +111,10 @@ class AdminController:
         current_date = datetime.now().strftime("'%d/%m/%Y")
         try:
             ec2_param = next((item for item in ec2_params if item["team"] == request.team), None)
+            # Tạo Elastic IP
+            elastic_ip_response = ec2_client.allocate_address(Domain='vpc')
+            elastic_ip = elastic_ip_response['PublicIp']
+            allocation_id = elastic_ip_response['AllocationId']
 
             # Định nghĩa các tham số
             region_name = ec2_param["region"]
@@ -117,7 +123,7 @@ class AdminController:
             key_name = ec2_param["key_name"]
             instance_type = ec2_param["instance_type"]
             ami_id = ec2_param["ami_id"]
-            instance_name = f"pro-seoadmin-{ec2_param['region']}-ec2-{ec2_param['team']}-{int(time.time())}"
+            instance_name = f"pro-seoadmin-{ec2_param['region']}-ec2-{ec2_param['team']}-{allocation_id}"
             tag_value = f"{request.team.split('-')[0].upper()}-{request.team.split('-')[1].zfill(2)}"
 
             # Tạo instance param
@@ -174,10 +180,6 @@ class AdminController:
             # Chờ instance sẵn sàng
             ec2_client.get_waiter('instance_running').wait(InstanceIds=[instance_id])
             print(f"2===> Instance with ID: {instance_id} is running.")
-            # Tạo Elastic IP
-            elastic_ip_response = ec2_client.allocate_address(Domain='vpc')
-            elastic_ip = elastic_ip_response['PublicIp']
-            allocation_id = elastic_ip_response['AllocationId']
 
             # Gán Elastic IP cho instance
             ec2_client.associate_address(InstanceId=instance_id, AllocationId=allocation_id)
@@ -248,6 +250,9 @@ class AdminController:
                 "data": {
                     "key_name": key_name,
                     "public_ip": elastic_ip,
+                    "cpu": "2 vCPU",
+                    "ram": "8 GiB",
+                    "site": "0"
                 },
             }
         
