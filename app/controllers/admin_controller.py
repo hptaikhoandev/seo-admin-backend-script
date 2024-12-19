@@ -111,10 +111,6 @@ class AdminController:
         current_date = datetime.now().strftime("'%d/%m/%Y")
         try:
             ec2_param = next((item for item in ec2_params if item["team"] == request.team), None)
-            # Tạo Elastic IP
-            elastic_ip_response = ec2_client.allocate_address(Domain='vpc')
-            elastic_ip = elastic_ip_response['PublicIp']
-            allocation_id = elastic_ip_response['AllocationId']
 
             # Định nghĩa các tham số
             region_name = ec2_param["region"]
@@ -123,8 +119,20 @@ class AdminController:
             key_name = ec2_param["key_name"]
             instance_type = ec2_param["instance_type"]
             ami_id = ec2_param["ami_id"]
-            instance_name = f"pro-seoadmin-{ec2_param['region']}-ec2-{ec2_param['team']}-{allocation_id}"
             tag_value = f"{request.team.split('-')[0].upper()}-{request.team.split('-')[1].zfill(2)}"
+
+            ec2_client = boto3.client(
+                'ec2',
+                aws_access_key_id=AWS_ACCESS_KEY, 
+                aws_secret_access_key=AWS_SECRET, 
+                region_name=region_name
+            )
+            # Tạo Elastic IP
+            elastic_ip_response = ec2_client.allocate_address(Domain='vpc')
+            elastic_ip = elastic_ip_response['PublicIp']
+            allocation_id = elastic_ip_response['AllocationId']
+            
+            instance_name = f"pro-seoadmin-{ec2_param['region']}-ec2-{ec2_param['team']}-{allocation_id}"
 
             # Tạo instance param
             instance_params = {
@@ -161,13 +169,6 @@ class AdminController:
                     }
                 ]
             }
-
-            ec2_client = boto3.client(
-                'ec2',
-                aws_access_key_id=AWS_ACCESS_KEY, 
-                aws_secret_access_key=AWS_SECRET, 
-                region_name=region_name
-            )
 
             # Bước 1: Tạo EC2 instance
             response = ec2_client.run_instances(**instance_params)
