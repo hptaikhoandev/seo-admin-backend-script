@@ -9,9 +9,20 @@ from app.routers import admin_router
 from app.routers import dashboard_router
 from app.routers import destroysite_router
 from app.routers import tracking_link_router
-
+from dotenv import load_dotenv
+import os
 
 app = FastAPI()
+
+# Xóa cache của các biến môi trường
+def reload_env():
+    for key in list(os.environ.keys()):
+        if key not in os.environ._data:
+            del os.environ[key]
+    load_dotenv()
+
+# Tải biến môi trường khi ứng dụng khởi động
+reload_env()
 
 # Add CORS middleware
 app.add_middleware(

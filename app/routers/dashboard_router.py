@@ -17,3 +17,8 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 # async def add_domains(request: DomainRequest, credentials: HTTPAuthorizationCredentials = Depends(verify_token)):
 async def count_domains(server_ip: str = Query(...), team: str = Query(...)):
     return await DashboardController.count_domains(server_ip, team)
+
+@router.get("/script/param-dashboard")
+# async def add_domains(request: DomainRequest, credentials: HTTPAuthorizationCredentials = Depends(verify_token)):
+async def param_dashboard(server_ip: str = Query(...), team: str = Query(...)):
+    return await DashboardController.param_dashboard(server_ip, team)

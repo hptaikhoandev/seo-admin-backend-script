@@ -4,16 +4,23 @@ from googleapiclient.errors import HttpError
 from google.oauth2.service_account import Credentials
 from fastapi import HTTPException, Query
 import requests
-import random
-import time
 import paramiko
 import os
 import json
 import io
 from datetime import datetime
+import boto3 
+from dotenv import load_dotenv
+from app.constants.constants import ec2_params
 
+# Xóa cache của biến môi trường
+os.environ.clear()
+load_dotenv()
+AWS_ACCESS_KEY=os.getenv('AWS_ACCESS_KEY')
+AWS_SECRET=os.getenv('AWS_SECRET')
 api_token_backend = os.getenv('API_TOKEN_BACKEND')
-url_backend = f"{os.getenv('URL_DOMAIN_BACKEND')}/servers"
+url_backend_private_key = f"{os.getenv('URL_DOMAIN_BACKEND')}/servers"
+url_backend_sites = f"{os.getenv('URL_DOMAIN_BACKEND')}/tasks"
 headers_backend = {
     'Authorization': f'Bearer {api_token_backend}',
     'Content-Type': 'application/json'
@@ -28,7 +35,7 @@ class DashboardController:
             "sortBy": "team",
             "sortDesc": "false",
         }
-        response = requests.get(url_backend, params=params, headers=headers_backend)
+        response = requests.get(url_backend_private_key, params=params, headers=headers_backend)
         # Kiểm tra lỗi HTTP
         response.raise_for_status()
         try:
@@ -38,6 +45,34 @@ class DashboardController:
         servers = data.get("data", []) 
         # Trả về danh sách account
         return servers[0]["private_key"]
+    
+    @staticmethod
+    async def fetch_sites_from_api(server_ip: str, team: str):
+        params = {
+            "page": 1,
+            "limit": 10000,
+            "search": team,
+            "sortBy": "team",
+            "sortDesc": "false",
+        }
+
+        response = requests.get(url_backend_sites, params=params, headers=headers_backend)
+
+        # Kiểm tra lỗi HTTP
+        response.raise_for_status()
+        try:
+            data = response.json()  
+        except requests.JSONDecodeError:
+            raise ValueError("Response is not a valid JSON")
+        siteList = data.get("data", []) 
+        site = next((item for item in siteList if item["server_ip"] == server_ip), None)
+        print(f"===>ffff: {site}")
+
+        # Trả về danh sách sites
+        if site is not None:
+            return site["sites"]
+        else:
+            return 0
 
     @staticmethod
     async def count_domains(server_ip: str = Query(...), team: str = Query(...)):
@@ -110,6 +145,63 @@ class DashboardController:
 
             return {"status": "success", "result": result}
 
+        except Exception as e:
+            print(f"Exception Error: {str(e)}")     
+            result["fail"]["count"] += 1
+            result["fail"]["messages"].append(str(e))
+            return {"status": "success", "result": result}
+        
+    @staticmethod
+    async def param_dashboard(server_ip: str = Query(...), team: str = Query(...)):
+        ec2_param = next((item for item in ec2_params if item["team"] == team), None)
+        result = {"success": 0, "fail": {"count": 0, "messages": []}}
+        outputCPU = 0
+        outputRAM = 0
+        outputSite = 0
+        try:
+            ec2_client = boto3.client(
+                'ec2',
+                aws_access_key_id=AWS_ACCESS_KEY, 
+                aws_secret_access_key=AWS_SECRET, 
+                region_name=ec2_param["region"]
+            )
+
+            # Tìm InstanceId bằng IP
+            response = ec2_client.describe_instances(
+                Filters=[
+                    {'Name': 'ip-address', 'Values': [server_ip]},
+                    {'Name': 'instance-state-name', 'Values': ['running', 'stopped']}
+                ]
+            )
+
+            if not response['Reservations']:
+                print(f"No instance found with IP: {server_ip}")
+            else:
+                instance = response['Reservations'][0]['Instances'][0]
+                instance_id = instance['InstanceId']
+                instance_type = instance['InstanceType']
+                print(f"Instance ID: {instance_id}")
+                print(f"Instance Type: {instance_type}")
+                # Lấy thông tin RAM và CPU từ loại instance
+                instance_type_info = ec2_client.describe_instance_types(
+                    InstanceTypes=[instance_type]
+                )
+                instance_details = instance_type_info['InstanceTypes'][0]
+                outputCPU = instance_details['VCpuInfo']['DefaultVCpus']
+                outputRAM = instance_details['MemoryInfo']['SizeInMiB']
+
+            outputSite = await DashboardController.fetch_sites_from_api(server_ip, team)
+            
+            return {
+                "status": "success",
+                "result": result,
+                "data": {
+                    "cpu": outputCPU,
+                    "ram": outputRAM,
+                    "site": outputSite,
+                },
+            }
+        
         except Exception as e:
             print(f"Exception Error: {str(e)}")     
             result["fail"]["count"] += 1
