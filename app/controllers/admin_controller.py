@@ -227,7 +227,7 @@ class AdminController:
                     resultObj["result"]["elastic_ip"],
                     resultObj["result"]["private_ip_address"],
                     resultObj["result"]["instance_type"],
-                    f'{resultObj["result"]["cpu_cores"]}CPU & 8Gib',
+                    f'4vCPU & 8GiB',
                     'running',
                     resultObj["result"]["disk_size"],
                     resultObj["result"]["public_ip_address"],
