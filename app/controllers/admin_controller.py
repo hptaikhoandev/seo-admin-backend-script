@@ -131,8 +131,8 @@ class AdminController:
             elastic_ip_response = ec2_client.allocate_address(Domain='vpc')
             elastic_ip = elastic_ip_response['PublicIp']
             allocation_id = elastic_ip_response['AllocationId']
-            
-            instance_name = f"pro-seoadmin-{ec2_param['region']}-ec2-{ec2_param['team']}-{allocation_id}"
+
+            instance_name = f"{ec2_param['region']}-ec2-{ec2_param['team']}-{elastic_ip}"
 
             # Tạo instance param
             instance_params = {
@@ -251,8 +251,8 @@ class AdminController:
                 "data": {
                     "key_name": key_name,
                     "public_ip": elastic_ip,
-                    "cpu": "2 vCPU",
-                    "ram": "8 GiB",
+                    "cpu": "4",
+                    "ram": "8",
                     "site": "0"
                 },
             }
