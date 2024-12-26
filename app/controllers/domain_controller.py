@@ -73,7 +73,6 @@ class DomainController:
             if zones:
                 print(f"Domain {domain_name} đã tồn tại trong Cloudflare.")
                 return True
-        print(f"Domain {domain_name} không tồn tại trong Cloudflare.")
         return False    
     @staticmethod
     async def fetch_accounts_from_api(team: str):
@@ -92,7 +91,6 @@ class DomainController:
         except requests.JSONDecodeError:
             raise ValueError("Response is not a valid JSON")
         accounts = data.get("data", []) 
-        print(f"accounts===> {accounts}")
         # Trả về danh sách account
         return accounts
     
