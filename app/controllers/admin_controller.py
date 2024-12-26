@@ -151,7 +151,7 @@ class AdminController:
                 ],
                 "BlockDeviceMappings": [
                     {
-                        "DeviceName": "/dev/xvda",
+                        "DeviceName": "/dev/sda1",  # Ghi đè mặc định
                         "Ebs": {
                             "VolumeSize": 120,
                             "VolumeType": "gp3",
