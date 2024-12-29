@@ -88,7 +88,7 @@ class MultisiteController:
         USERNAMES = ["ubuntu", "ec2-user"]
         LOCAL_SCRIPT_PATH = "app/script/auto_add_multiple_wp_sites.sh"
         REMOTE_SCRIPT_PATH = "/tmp/remote_auto_add_multiple_wp_sites.sh"
-        result = {"success": 0, "fail": {"count": 0, "messages": []}} 
+        result = {"success": {"count": 0, "messages": []}, "fail": {"count": 0, "messages": []}} 
         for domain in request.domains:
             try:
                 print(f"Creating WP site for: {domain}")
@@ -140,7 +140,9 @@ class MultisiteController:
                     print(f"1-SSH Client Error: {error.strip()}") 
 
                 else:
-                    result["success"] += 1
+                    result["success"]["count"] += 1
+                    result["success"]["messages"].append(f"{domain}: created site successfully")
+
                     MultisiteController.append_to_google_sheet(domain, SERVER_IP)
             except Exception as e:
                 result["fail"]["count"] += 1
