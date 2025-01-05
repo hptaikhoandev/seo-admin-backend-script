@@ -104,7 +104,7 @@ class DomainController:
 
     @staticmethod
     async def add_domains(request: DomainRequest):
-        resultMessage = {"success": 0, "fail": {"count": 0, "messages": []}}
+        resultMessage = {"success": {"count": 0, "messages": []}, "fail": {"count": 0, "messages": []}} 
         results = []
         # Fetch accounts from API
         admin_accounts = await DomainController.fetch_accounts_from_api(request.team)
@@ -191,7 +191,8 @@ class DomainController:
             requests.patch(always_use_https_url, headers=headers_cf, json=always_use_https_data)
 
             # Add to results
-            resultMessage["success"] += 1
+            resultMessage["success"]["count"] += 1
+            resultMessage["success"]["messages"].append(f"{domain}: created domain in CloudFlare successfully")
             results.append({'domain': domain, 'ns': ",".join(name_servers)})
 
         return {"status": "success", "results": results, "resultMessage": resultMessage}

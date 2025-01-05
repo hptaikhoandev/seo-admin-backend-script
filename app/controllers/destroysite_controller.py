@@ -90,7 +90,7 @@ class DestroysiteController:
         REMOTE_SCRIPT_SAOLUU_PATH = "/tmp/remote_wptt-saoluu.sh"
         LOCAL_SCRIPT_XOA_PATH = "app/script/wptt-xoa-website.sh"
         REMOTE_SCRIPT_XOA_PATH = "/tmp/remote_wptt-xoa-website.sh"
-        result = {"success": 0, "fail": {"count": 0, "messages": []}} 
+        result = {"success": {"count": 0, "messages": []}, "fail": {"count": 0, "messages": []}} 
         for domain in request.domains:
             try:
                 connected_user = None  # Lưu user kết nối thành công
@@ -148,9 +148,9 @@ class DestroysiteController:
 
                 else:
                     result["success"] += 1
-                    # DestroysiteController.append_to_google_sheet(domain, SERVER_IP)
+                    result["success"]["messages"].append(f"{domain}: destroy site successfully")
             except Exception as e:
-                result["fail"]["count"] += 1
+                result["fail"]["count"]["count"] += 1
                 result["fail"]["messages"].append(f"{domain}: {str(e)}")
                 print(f"2-SSH Client Error: {str(e)}") 
 
