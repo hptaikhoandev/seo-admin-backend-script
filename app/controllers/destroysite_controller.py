@@ -147,7 +147,7 @@ class DestroysiteController:
                     print(f"1-SSH Client Error: {error.strip()}") 
 
                 else:
-                    result["success"] += 1
+                    result["success"]["count"] += 1
                     result["success"]["messages"].append(f"{domain}: destroy site successfully")
             except Exception as e:
                 result["fail"]["count"]["count"] += 1
