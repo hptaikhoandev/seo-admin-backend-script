@@ -87,7 +87,7 @@ class ClonesiteController:
         USERNAMES = ["ubuntu", "ec2-user"]
         LOCAL_SCRIPT_PATH = "app/script/wptt-sao-chep-website.sh"
         REMOTE_SCRIPT_PATH = "/tmp/remote_wptt-sao-chep-website.sh"
-        result = {"success": 0, "fail": {"count": 0, "messages": []}}
+        result = {"success": {"count": 0, "messages": []}, "fail": {"count": 0, "messages": []}} 
 
         try:
             connected_user = None  # Lưu user kết nối thành công
@@ -142,15 +142,13 @@ class ClonesiteController:
                 result["fail"]["count"] += 1
                 result["fail"]["messages"].append(error.strip())
             else:
-                result["success"] += 1
-                ClonesiteController.append_to_google_sheet(target_domain, SERVER_IP)
-
-
-            return {"status": "success", "result": result}
-
+                result["success"]["count"] += 1
+                result["success"]["messages"].append(f"{request.source_domain}: cloned site successfully")
+                # ClonesiteController.append_to_google_sheet(target_domain, SERVER_IP)
         except Exception as e:
             print(f"Exception Error: {str(e)}")     
             result["fail"]["count"] += 1
             result["fail"]["messages"].append(str(e))
-            return {"status": "success", "result": result}
+
+        return {"status": "success", "result": result}
 
