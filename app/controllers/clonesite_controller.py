@@ -11,6 +11,8 @@ import os
 import json
 import io
 from datetime import datetime
+import threading
+import time
 
 api_token_backend = os.getenv('API_TOKEN_BACKEND')
 url_backend = f"{os.getenv('URL_DOMAIN_BACKEND')}/servers"
@@ -132,7 +134,18 @@ class ClonesiteController:
             source_domain = request.source_domain
             target_domain = request.target_domain
             command = f"sudo bash {REMOTE_SCRIPT_PATH} {source_domain} {target_domain}"
+
+            # Execute the command in non-blocking mode
             stdin, stdout, stderr = ssh_client.exec_command(command)
+
+            # Delay to close the SSH connection after 30 seconds
+            def delayed_close(ssh_client, delay):
+                time.sleep(delay)
+                ssh_client.close()
+
+            # Start a background thread to close the SSH connection after 30 seconds
+            thread = threading.Thread(target=delayed_close, args=(ssh_client, 30))
+            thread.start()
 
             output = stdout.read().decode()
             error = stderr.read().decode()

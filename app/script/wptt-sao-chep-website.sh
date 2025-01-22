@@ -31,7 +31,6 @@ if [[ $NAME = '' ]]; then
   fi
 fi
 
-
 # Kiểm tra nếu cả NAME và NAME2 tồn tại
 pathcheck_name1="/etc/wptt/vhost/.$NAME.conf"
 pathcheck_name2="/etc/wptt/vhost/.$NAME2.conf"
@@ -110,15 +109,6 @@ fi
 
 
 USER=${NAME2//[-._]/wp}
-
-# if  [[ $(cat /etc/passwd | cut -f1 -d ':' | grep -w $USER) ]]; then
-#   clear
-#   echo "User đã tồn tại trên hệ thống."
-#   echo
-#   wptangtoc 1
-#   exit
-# fi
-
 
 . /etc/wptt/.wptt.conf
 
@@ -336,7 +326,6 @@ database=${name_db}_${ramdom_db}_dbname
 username=${name_db}_${ramdom_db}_username
 password=$(date +%s | sha256sum | base64 | head -c 36 ; echo)
 
-
 #toi ky tu database la 64
 check_ky_tu_database_name=$(echo $database | wc -c)
 if (( $check_ky_tu_database_name > 60 ));then
@@ -348,6 +337,12 @@ check_ky_tu_user_name=$(echo $username | wc -c)
 if (( $check_ky_tu_user_name > 60 ));then
 	username=$(echo $username | cut -c 1-60)
 fi
+
+if ! systemctl is-active --quiet mariadb; then
+  echo "MariaDB không hoạt động. Dừng script." >&2
+  exit 1
+fi
+
 _runing "Thêm database mới cho website $NAME2"
 mariadb -u "$database_admin_username" -p"$database_admin_password" -e "DROP DATABASE IF EXISTS ${database}"
 mariadb -u "$database_admin_username" -p"$database_admin_password" -e "CREATE DATABASE IF NOT EXISTS ${database}"
@@ -379,7 +374,12 @@ rm -f "$duong_dan_thu_muc"
 duong_dan_nguon_cu="/usr/local/lsws/$NAME/html"
 duong_dan_nguon_moi21="/usr/local/lsws/$NAME2"
 duong_dan_nguon_moi="/usr/local/lsws/$NAME2/html"
-cp -r "$duong_dan_nguon_cu" "$duong_dan_nguon_moi21"
+
+if ! cp -r "$duong_dan_nguon_cu" "$duong_dan_nguon_moi21"; then
+  echo "Copy thất bại. Dừng script." >&2
+  exit 1
+fi
+
 sed -i "/DB_HOST/s/'[^']*'/'localhost'/2" "/usr/local/lsws/$NAME2/html/wp-config.php"
 sed -i "/DB_NAME/s/'[^']*'/'$database'/2" "/usr/local/lsws/$NAME2/html/wp-config.php"
 sed -i "/DB_USER/s/'[^']*'/'$username'/2" "/usr/local/lsws/$NAME2/html/wp-config.php"
@@ -429,20 +429,10 @@ usermod -a -G wptangtoc-ols $USER
 # khong cho login quyen tai khoan trực tiếp chỉ sử dụng để làm sử dụng php exec
 usermod $USER -s /sbin/nologin
 
-# echo '[[ $- != *i* ]] && return' >> /home/$USER/.bashrc
-# echo ". /etc/wptt-user/wptt-status" >> /home/$USER/.bashrc
-# echo "alias 1='wptangtoc-user'" >> /home/$USER/.bashrc
-# echo "alias 11='wptangtoc-user'" >> /home/$USER/.bashrc
-
 echo '[[ $- != *i* ]] && return' >> /usr/local/lsws/$NAME2/.bashrc
 echo ". /etc/wptt-user/wptt-status" >> /usr/local/lsws/$NAME2/.bashrc
 echo "alias 1='wptangtoc-user'" >> /usr/local/lsws/$NAME2/.bashrc
 echo "alias 11='wptangtoc-user'" >> /usr/local/lsws/$NAME2/.bashrc
-
-
-# mkdir -p /home/$USER/$NAME2
-# ln -s /usr/local/lsws/$NAME2/html /home/$USER/$NAME2/public_html
-# ln -s /usr/local/lsws/$NAME2/backup-website /home/$USER/$NAME2/backup-website
 
 
 if [[ -f /usr/local/lsws/$NAME2/html/wp-config.php ]];then
@@ -454,8 +444,7 @@ fi
 fi
 
 
-/usr/local/lsws/bin/lswsctrl restart >/dev/null 2>&1
-
+timeout 30 /usr/local/lsws/bin/lswsctrl restart >/dev/null 2>&1
 
 php_version=$(php -v |grep cli | cut -c 4-7| sed 's/ //g')
 
@@ -488,7 +477,7 @@ echo "moi thong tin tai khoan da duoc luu tru:  /etc/wptt/vhost/.$NAME2.conf    
 echo "==================================================================="
 echo "Phần mềm phát triển bởi: Gia Tuấn"
 echo "==================================================================="
-checkdns=$(host $NAME2 | grep -Eo -m 1 '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')
+checkdns=$(timeout 10 host $NAME2 | grep -Eo -m 1 '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')
 if [[ "$checkdns" = "" ]]; then
   checkdns=$(nslookup $NAME2 | grep Address | cut -f5 | grep -Eo -m 1 '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')
 fi
