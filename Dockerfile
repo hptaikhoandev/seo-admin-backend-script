@@ -9,8 +9,9 @@ COPY requirements.txt .
 
 # Cài đặt các dependency cần thiết
 RUN python3 -m venv venv
+RUN python3 -m pip install --upgrade pip
 RUN source venv/bin/activate
-RUN pip3 install -r requirements.txt
+RUN pip3 install --default-timeout=100 -r requirements.txt
 
 # Sao chép toàn bộ mã nguồn vào thư mục làm việc
 COPY . .
