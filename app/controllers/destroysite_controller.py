@@ -11,6 +11,7 @@ import os
 import io
 from datetime import datetime
 
+SSH_TEAM=os.getenv('SSH_TEAM')
 api_token_backend = os.getenv('API_TOKEN_BACKEND')
 url_backend = f"{os.getenv('URL_DOMAIN_BACKEND')}/servers"
 headers_backend = {
@@ -38,6 +39,26 @@ class DestroysiteController:
         servers = data.get("data", []) 
         # Trả về danh sách account
         return servers[0]["private_key"]
+    
+    @staticmethod
+    async def fetch_username_from_api(key_name: str):
+        params = {
+            "page": 1,
+            "limit": 10000,
+            "search": key_name,
+            "sortBy": "team",
+            "sortDesc": "false",
+        }
+        response = requests.get(url_backend, params=params, headers=headers_backend)
+        # Kiểm tra lỗi HTTP
+        response.raise_for_status()
+        try:
+            data = response.json()  
+        except requests.JSONDecodeError:
+            raise ValueError("Response is not a valid JSON")
+        servers = data.get("data", []) 
+        # Trả về danh sách account
+        return servers[0]["username"]
 
     @staticmethod
     def append_to_google_sheet(domain, SERVER_IP):
@@ -96,6 +117,9 @@ class DestroysiteController:
                 connected_user = None  # Lưu user kết nối thành công
                 connection_errors = []  # Lưu danh sách lỗi trong quá trình kết nối
                 key_name = f"{TEAM}_{SERVER_IP}"
+                if SSH_TEAM and TEAM in SSH_TEAM:
+                    current_user = await DestroysiteController.fetch_username_from_api(key_name)
+                    USERNAMES = [current_user]
                 private_key_content = await DestroysiteController.fetch_private_key_from_api(key_name)
                 private_key = paramiko.RSAKey.from_private_key(io.StringIO(private_key_content))
                 ssh_client = paramiko.SSHClient()
