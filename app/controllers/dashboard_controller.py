@@ -18,6 +18,7 @@ os.environ.clear()
 load_dotenv()
 AWS_ACCESS_KEY=os.getenv('AWS_ACCESS_KEY')
 AWS_SECRET=os.getenv('AWS_SECRET')
+SSH_TEAM=os.getenv('SSH_TEAM')
 api_token_backend = os.getenv('API_TOKEN_BACKEND')
 url_backend_private_key = f"{os.getenv('URL_DOMAIN_BACKEND')}/servers"
 url_backend_sites = f"{os.getenv('URL_DOMAIN_BACKEND')}/tasks"
@@ -127,6 +128,26 @@ class DashboardController:
             return site["ram"]
         else:
             return 0
+        
+    @staticmethod
+    async def fetch_username_from_api(key_name: str):
+        params = {
+            "page": 1,
+            "limit": 10000,
+            "search": key_name,
+            "sortBy": "team",
+            "sortDesc": "false",
+        }
+        response = requests.get(url_backend_private_key, params=params, headers=headers_backend)
+        # Kiểm tra lỗi HTTP
+        response.raise_for_status()
+        try:
+            data = response.json()  
+        except requests.JSONDecodeError:
+            raise ValueError("Response is not a valid JSON")
+        servers = data.get("data", []) 
+        # Trả về danh sách account
+        return servers[0]["username"]
 
     @staticmethod
     async def count_domains(server_ip: str = Query(...), team: str = Query(...)):
@@ -136,11 +157,15 @@ class DashboardController:
         LOCAL_SCRIPT_PATH = "app/script/wptt-list-domain.sh"
         REMOTE_SCRIPT_PATH = "/tmp/remote_wptt-list-domain.sh"
         result = {"success": 0, "fail": {"count": 0, "messages": []}}
-
         try:
             connected_user = None  # Lưu user kết nối thành công
             connection_errors = []  # Lưu danh sách lỗi trong quá trình kết nối
             key_name = f"{TEAM}_{SERVER_IP}"
+
+            if SSH_TEAM and TEAM in SSH_TEAM:
+                current_user = await DashboardController.fetch_username_from_api(key_name)
+                USERNAMES = [current_user]
+            
             private_key_content = await DashboardController.fetch_private_key_from_api(key_name)
 
             # Load private key content into paramiko.RSAKey
