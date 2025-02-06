@@ -22,3 +22,9 @@ async def count_domains(server_ip: str = Query(...), team: str = Query(...)):
 # async def add_domains(request: DomainRequest, credentials: HTTPAuthorizationCredentials = Depends(verify_token)):
 async def param_dashboard(server_ip: str = Query(...), team: str = Query(...)):
     return await DashboardController.param_dashboard(server_ip, team)
+
+
+@router.get("/script/param-dashboard-ssh")
+# async def add_domains(request: DomainRequest, credentials: HTTPAuthorizationCredentials = Depends(verify_token)):
+async def param_dashboard_ssh(server_ip: str = Query(...), team: str = Query(...), username: str = Query(...), private_key: str = Query(...)):
+    return await DashboardController.param_dashboard_ssh(server_ip, team, username, private_key)
