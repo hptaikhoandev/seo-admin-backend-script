@@ -373,7 +373,7 @@ class DashboardController:
             output_lines = stdout.read().decode().split("\n")
             error = stderr.read().decode()
             ssh_client.close()
-            outputCPU = await DashboardController.fetch_cpu_from_api(server_ip, team)
+            outputCPU = 0
             try:
                 if len(output_lines) >= 2:
                     cpu_count = output_lines[0]
