@@ -64,12 +64,12 @@ class MultisiteController:
     def append_to_google_sheet(domain, SERVER_IP):
         try:
             # Thông tin Google Sheets
-            SPREADSHEET_ID = '1E6f0UZ_e1Ec4m_vI2coJHebIX8DiEq8gam0PeiEdOXY'  # Thay bằng ID của Google Sheet
+            SPREADSHEET_ID = '1G2IxaQyTgVAHVtCbFuZcXJWdZDNplw9g7JUTBpEdJfc'  # Thay bằng ID của Google Sheet
             SHEET_NAME = 'server'  # Thay bằng tên sheet
 
             # Load credentials từ file service account
             creds = Credentials.from_service_account_file(
-                'app/key/seo-admin-442609-152c2f330723.json',
+                'app/key/seo-admin-450206-7e93bdae458e.json',
                 scopes=["https://www.googleapis.com/auth/spreadsheets"]
             )
             service = build('sheets', 'v4', credentials=creds)
