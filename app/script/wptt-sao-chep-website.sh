@@ -365,7 +365,12 @@ sleep 1
 # Replace all occurrences of domainA.com with domainB.com in the SQL dump file
 sed -E -i "s/$NAME/$NAME2/g" "$duong_dan_thu_muc"
 #check version wptt
-mysql -h localhost -u "$database_admin_username" -p"$database_admin_password" "$database" < "$duong_dan_thu_muc"
+if command -v mariadb &> /dev/null; then
+    mariadb -h localhost -u "$database_admin_username" -p"$database_admin_password" "$database" < "$duong_dan_thu_muc"
+elif command -v mysql &> /dev/null; then
+    mysql -h localhost -u "$database_admin_username" -p"$database_admin_password" "$database" < "$duong_dan_thu_muc"
+fi
+
 rm -f "$duong_dan_thu_muc"
 duong_dan_nguon_cu="/usr/local/lsws/$NAME/html"
 duong_dan_nguon_moi21="/usr/local/lsws/$NAME2"
