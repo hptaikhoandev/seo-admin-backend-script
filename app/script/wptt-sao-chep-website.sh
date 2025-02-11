@@ -119,7 +119,6 @@ max_client_max=$(expr $work_cpucore \* $cpucore \* 3)
 max_client_php=$(expr $work_cpucore \* $cpucore \/ 8)
 tong_ram_byte=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
 rong_ram_mb=$(echo "scale=0;${tong_ram_byte}/1024" | bc)
-
 gioi_han_tien_trinh_bao_loi_503=$(expr $max_client \/ 8)
 _runing "Thêm domain $NAME2 vào hệ thống"
 
@@ -369,7 +368,15 @@ mkdir -p "/usr/local/lsws/database"
 file_sql=${database}.sql
 duong_dan_thu_muc="/usr/local/lsws/database/$file_sql"
 mariadb-dump -u "$database_admin_username" -p"$database_admin_password" "$DB_Name_web" > "$duong_dan_thu_muc"
-mariadb -h localhost -u "$database_admin_username" -p"$database_admin_password" "$database" < "$duong_dan_thu_muc"
+sleep 1
+# Replace all occurrences of domainA.com with domainB.com in the SQL dump file
+sed -E -i "s/$NAME/$NAME2/g" "$duong_dan_thu_muc"
+#check version wptt
+if [[ "$(echo -e "$version_wptangtoc_ols\n5.4.1" | sort -V | head -n 1)" == "$version_wptangtoc_ols" ]];then
+  mysql -h localhost -u "$database_admin_username" -p"$database_admin_password" "$database" < "$duong_dan_thu_muc"
+else
+  mariadb -h localhost -u "$database_admin_username" -p"$database_admin_password" "$database" < "$duong_dan_thu_muc"
+fi
 rm -f "$duong_dan_thu_muc"
 duong_dan_nguon_cu="/usr/local/lsws/$NAME/html"
 duong_dan_nguon_moi21="/usr/local/lsws/$NAME2"
@@ -422,7 +429,6 @@ ln -s /usr/local/lsws/$NAME2 /home/$NAME2
 if [[ -f /usr/local/lsws/$NAME2/html/wp-content/db.php ]];then
 rm -f /usr/local/lsws/$NAME2/html/wp-content/db.php
 fi
-
 
 usermod -a -G wptangtoc-ols $USER
 
