@@ -1,4 +1,3 @@
-
 #!/bin/bash
 # @author: Gia Tuấn
 # @website: https://wptangtoc.com
@@ -11,21 +10,20 @@ export LC_ALL=en_US.UTF-8
 NAME=$1
 NAME2=$2
 
-# Xử lý khi NAME bằng "98"
-if [[ $NAME = "98" ]]; then
-  NAME=""
+if [[ $NAME = "98" ]];then
+NAME=""
 fi
 
 # Nếu NAME rỗng, yêu cầu người dùng chọn tên miền
 if [[ $NAME = '' ]]; then
-  if ! . /etc/wptt/tenmien; then
-    echo "Error: Không thể tải file cấu hình /etc/wptt/tenmien" >&2
+if ! . /etc/wptt/tenmien; then
+echo "Error: Không thể tải file cấu hình /etc/wptt/tenmien" >&2
     exit 1
   fi
-  echo ""
-  echo "Lựa chọn domain hoặc subdomain bạn muốn sao chép: "
-  echo ""
-  if ! lua_chon_NAME; then
+echo ""
+echo "Lựa chọn domain hoặc subdomain bạn muốn sao chép: "
+echo ""
+if ! lua_chon_NAME; then
     echo "Error: Không thể thực thi lua_chon_NAME" >&2
     exit 1
   fi
@@ -42,40 +40,40 @@ fi
 
 # Kiểm tra nếu $NAME không hợp lệ hoặc không tồn tại
 if [[ "$NAME" = "0" || "$NAME" = "" ]]; then
-  echo "Error: Tên miền không hợp lệ hoặc không được cung cấp." >&2
+	echo "Error: Tên miền không hợp lệ hoặc không được cung cấp." >&2
   exit 1
 fi
 
 pathcheck="/etc/wptt/vhost/.$NAME.conf"
 if [[ ! -f "$pathcheck" ]]; then
-  echo "Error: Tên miền $NAME không tồn tại trên hệ thống này." >&2
-  exit 1
+    echo "Error: Tên miền $NAME không tồn tại trên hệ thống này." >&2
+    exit 1
 fi
 
 
 NAME_NGUON=$(echo $NAME)
 
 if [[ $2 = '' ]]; then
-    read -p "Nhập domain hoặc subdomain bạn muốn thêm và sao chép vào
+read -p "Nhập domain hoặc subdomain bạn muốn thêm và sao chép vào
     (ví dụ: wptangtoc.com, abc.wptangtoc.com ...) [0=Thoát]: " NAME2
 fi
 
 if [ "$NAME2" = '' ]; then
-    clear
-    echo "Bạn chưa nhập tên miền domain." >&2  # In lỗi ra stderr
-    exit 1
+  clear
+  echo "Bạn chưa nhập tên miền domain." >&2  # In lỗi ra stderr
+  exit 1
 fi
 
 if [[ "$NAME2" = "0" ]]; then
-    clear
-    echo "Thoát khỏi chương trình." >&2  # In thông báo thoát ra stderr nếu cần
+  clear
+  echo "Thoát khỏi chương trình." >&2  # In thông báo thoát ra stderr nếu cần
     exit 1
 fi
 
 # Domain người dùng nhập sử dụng thêm space cách, sẽ báo không đúng định dạng
 if [ $(echo $NAME2 | wc -w) -gt 1 ]; then
-    echo "ERROR: Domain nhập không đúng định dạng" >&2
-    exit 1
+echo "ERROR: Domain nhập không đúng định dạng" >&2
+exit 1
 fi
 
 
@@ -325,6 +323,7 @@ database=${name_db}_${ramdom_db}_dbname
 username=${name_db}_${ramdom_db}_username
 password=$(date +%s | sha256sum | base64 | head -c 36 ; echo)
 
+
 #toi ky tu database la 64
 check_ky_tu_database_name=$(echo $database | wc -c)
 if (( $check_ky_tu_database_name > 60 ));then
@@ -336,12 +335,6 @@ check_ky_tu_user_name=$(echo $username | wc -c)
 if (( $check_ky_tu_user_name > 60 ));then
 	username=$(echo $username | cut -c 1-60)
 fi
-
-if ! systemctl is-active --quiet mariadb; then
-  echo "MariaDB không hoạt động. Dừng script." >&2
-  exit 1
-fi
-
 _runing "Thêm database mới cho website $NAME2"
 mariadb -u "$database_admin_username" -p"$database_admin_password" -e "DROP DATABASE IF EXISTS ${database}"
 mariadb -u "$database_admin_username" -p"$database_admin_password" -e "CREATE DATABASE IF NOT EXISTS ${database}"
@@ -372,11 +365,7 @@ sleep 1
 # Replace all occurrences of domainA.com with domainB.com in the SQL dump file
 sed -E -i "s/$NAME/$NAME2/g" "$duong_dan_thu_muc"
 #check version wptt
-if [[ "$(echo -e "$version_wptangtoc_ols\n5.4.1" | sort -V | head -n 1)" == "$version_wptangtoc_ols" ]];then
-  mysql -h localhost -u "$database_admin_username" -p"$database_admin_password" "$database" < "$duong_dan_thu_muc"
-else
-  mariadb -h localhost -u "$database_admin_username" -p"$database_admin_password" "$database" < "$duong_dan_thu_muc"
-fi
+mysql -h localhost -u "$database_admin_username" -p"$database_admin_password" "$database" < "$duong_dan_thu_muc"
 rm -f "$duong_dan_thu_muc"
 duong_dan_nguon_cu="/usr/local/lsws/$NAME/html"
 duong_dan_nguon_moi21="/usr/local/lsws/$NAME2"
@@ -430,15 +419,26 @@ if [[ -f /usr/local/lsws/$NAME2/html/wp-content/db.php ]];then
 rm -f /usr/local/lsws/$NAME2/html/wp-content/db.php
 fi
 
+
 usermod -a -G wptangtoc-ols $USER
 
 # khong cho login quyen tai khoan trực tiếp chỉ sử dụng để làm sử dụng php exec
 usermod $USER -s /sbin/nologin
 
+# echo '[[ $- != *i* ]] && return' >> /home/$USER/.bashrc
+# echo ". /etc/wptt-user/wptt-status" >> /home/$USER/.bashrc
+# echo "alias 1='wptangtoc-user'" >> /home/$USER/.bashrc
+# echo "alias 11='wptangtoc-user'" >> /home/$USER/.bashrc
+
 echo '[[ $- != *i* ]] && return' >> /usr/local/lsws/$NAME2/.bashrc
 echo ". /etc/wptt-user/wptt-status" >> /usr/local/lsws/$NAME2/.bashrc
 echo "alias 1='wptangtoc-user'" >> /usr/local/lsws/$NAME2/.bashrc
 echo "alias 11='wptangtoc-user'" >> /usr/local/lsws/$NAME2/.bashrc
+
+
+# mkdir -p /home/$USER/$NAME2
+# ln -s /usr/local/lsws/$NAME2/html /home/$USER/$NAME2/public_html
+# ln -s /usr/local/lsws/$NAME2/backup-website /home/$USER/$NAME2/backup-website
 
 
 if [[ -f /usr/local/lsws/$NAME2/html/wp-config.php ]];then
@@ -450,7 +450,8 @@ fi
 fi
 
 
-timeout 30 /usr/local/lsws/bin/lswsctrl restart >/dev/null 2>&1
+/usr/local/lsws/bin/lswsctrl restart >/dev/null 2>&1
+
 
 php_version=$(php -v |grep cli | cut -c 4-7| sed 's/ //g')
 
@@ -483,7 +484,7 @@ echo "moi thong tin tai khoan da duoc luu tru:  /etc/wptt/vhost/.$NAME2.conf    
 echo "==================================================================="
 echo "Phần mềm phát triển bởi: Gia Tuấn"
 echo "==================================================================="
-checkdns=$(timeout 10 host $NAME2 | grep -Eo -m 1 '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')
+checkdns=$(host $NAME2 | grep -Eo -m 1 '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')
 if [[ "$checkdns" = "" ]]; then
   checkdns=$(nslookup $NAME2 | grep Address | cut -f5 | grep -Eo -m 1 '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')
 fi
