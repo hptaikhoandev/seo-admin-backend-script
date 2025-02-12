@@ -1,4 +1,5 @@
 from app.models.redirect_request import RedirectRequest
+from app.models.delete_redirect_request import DeleteRedirectRequest
 from fastapi import HTTPException
 import requests
 import random
@@ -156,6 +157,49 @@ class RedirectController:
                     print(f"Failed to create Page Rule for www.{domain}: {create_www_response.text}")
             else:
                 print(f"Failed to create Page Rule for {domain}: {create_response.text}")
+
+        return {"status": "success", "result": result}
+    
+    @staticmethod
+    async def delete_redirect(request: DeleteRedirectRequest):
+        print(f"====>api_token  {api_token_cf}")
+
+        result = {"success": 0, "fail": {"count": 0, "messages": []}}
+
+        for index, domain in enumerate(request.domains):
+            zone_id = None
+            zone_id = RedirectController.get_zone_id(domain)
+            # Tiếp tục xử lý các phần còn lại nếu zone_id được lấy thành công
+            if not zone_id:
+                print(f"Domains not registered with Cloudflare: {domain}")
+                result["fail"]["count"] += 1
+                fail_message = "chưa đăng ký tên miền với Cloudflare"
+                result["fail"]["messages"].append(f"{domain}: {fail_message}")
+                continue  # Bỏ qua domain hiện tại nếu không thể lấy được zone_id sau 3 lần thử
+
+            # Cloudflare API endpoint to get Page Rules
+            list_url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/pagerules"
+
+            # Get existing Page Rules
+            response = requests.get(list_url, headers=headers)
+            if response.status_code != 200:
+                print(f"Failed to retrieve Page Rules for {domain}: {response.text}")
+                continue
+
+            existing_rules = response.json().get('result', [])
+
+            # Delete all existing Page Rules
+            if not existing_rules:
+                print(f"No Page Rules found for {domain}")
+            else:
+                for rule in existing_rules:
+                    rule_id = rule['id']
+                    delete_url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/pagerules/{rule_id}"
+                    delete_response = requests.delete(delete_url, headers=headers)
+                    if delete_response.status_code == 200:
+                        print(f"Deleted Page Rule with ID {rule_id} for {domain}")
+                    else:
+                        print(f"Failed to delete Page Rule {rule_id} for {domain}: {delete_response.text}")
 
         return {"status": "success", "result": result}
     

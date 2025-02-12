@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, FastAPI, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.controllers.redirect_controller import RedirectController
 from app.models.redirect_request import RedirectRequest
+from app.models.delete_redirect_request import DeleteRedirectRequest
 
 
 router = APIRouter()
@@ -19,3 +20,6 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 async def redirect_domains(request: RedirectRequest):
     return await RedirectController.create_redirect(request)
 
+@router.delete("/script/redirect-domains")
+async def delete_redirect_domains(request: DeleteRedirectRequest):
+    return await RedirectController.delete_redirect(request)
