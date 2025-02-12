@@ -381,14 +381,28 @@ fi
 
     tien_to_db=$(date +%s | sha256sum | base64 | head -c 6)
 
-wp core config --dbname="$DB_Name_web" --dbuser="$DB_User_web" --dbpass="$DB_Password_web" --dbhost=localhost --dbprefix="${tien_to_db}"_ --dbcharset='utf8mb4' --dbcollate='utf8mb4_unicode_ci' --allow-root >/dev/null 2>&1 --extra-php <<PHP
-
+/usr/local/bin/wp core config \
+    --dbname="$DB_Name_web" \
+    --dbuser="$DB_User_web" \
+    --dbpass="$DB_Password_web" \
+    --dbhost=localhost \
+    --dbprefix="${tien_to_db}"_ \
+    --dbcharset='utf8mb4' \
+    --dbcollate='utf8mb4_unicode_ci' \
+    --allow-root \
+    --extra-php <<PHP
 define( 'WP_DEBUG_LOG', false );
 define( 'WP_DEBUG_DISPLAY', false );
 PHP
     
-      wp core install --url="${ssl_check}""${domain}" --title="$domain" --admin_user="$idusername" --admin_password="$mypassword" --admin_email="$emailwp" --allow-root >/dev/null 2>&1
-  
+/usr/local/bin/wp core install \
+    --url="${ssl_check}""${domain}" \
+    --title="$domain" \
+    --admin_user="$idusername" \
+    --admin_password="$mypassword" \
+    --admin_email="$emailwp" \
+    --allow-root \
+    --skip-email >/dev/null 2>&1
 
   echo '
 # BEGIN WordPress
@@ -403,13 +417,14 @@ RewriteRule . /index.php [L]
 </IfModule>
 # END WordPress' >/usr/local/lsws/"$domain"/html/.htaccess
 
-  wp language core install vi --path=/usr/local/lsws/"$domain"/html --activate --allow-root >/dev/null 2>&1
-  wp option update timezone_string "Asia/Ho_Chi_Minh" --path=/usr/local/lsws/"$domain"/html --allow-root >/dev/null 2>&1
-  wp rewrite structure '/%postname%/' --path=/usr/local/lsws/"$domain"/html --allow-root >/dev/null 2>&1
+  /usr/local/bin/wp language core install vi --path=/usr/local/lsws/"$domain"/html --activate --allow-root >/dev/null 2>&1
+  /usr/local/bin/wp option update timezone_string "Asia/Ho_Chi_Minh" --path=/usr/local/lsws/"$domain"/html --allow-root >/dev/null 2>&1
+  /usr/local/bin/wp rewrite structure '/%postname%/' --path=/usr/local/lsws/"$domain"/html --allow-root >/dev/null 2>&1
     sleep 0.4
 
 echo "Phân quyền website $domain"
 chown -R "$User_name_vhost":"$User_name_vhost" /usr/local/lsws/"$domain"/html
+# chmod -R 755 /usr/local/lsws/"$domain"/html
 /usr/local/lsws/bin/lswsctrl restart >/dev/null 2>&1
   sleep 0.4
   fi

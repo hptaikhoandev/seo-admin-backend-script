@@ -153,21 +153,32 @@ class MultisiteController:
 
                 command = f"sudo bash {REMOTE_SCRIPT_PATH} {domain}"
                 stdin, stdout, stderr = ssh_client.exec_command(command)
+                
+                # Đợi lệnh thực thi xong và lấy mã thoát (exit code)
+                exit_status = stdout.channel.recv_exit_status()
 
-                output = stdout.read().decode()
-                error = stderr.read().decode()
+                output = stdout.read().decode().strip()
+                error = stderr.read().decode().strip()
                 ssh_client.close()
-
-                if error.strip():
-                    result["fail"]["count"] += 1
-                    result["fail"]["messages"].append(f"{domain}: {error.strip()}")
-                    print(f"1-SSH Client Error: {error.strip()}") 
-
+                if exit_status == 0:
+                    # Thành công (exit code = 0).
+                    # Tuy nhiên, vẫn có thể có cảnh báo (warning) trong `error`.
+                    print(f"Command thành công, Output: {output}")
+                    if error:
+                        result["fail"]["count"] += 1
+                        result["fail"]["messages"].append(f"{domain}: {error.strip()}")
+                        print(f"1-SSH Client Error: {error}")
+                    else:
+                        result["success"]["count"] += 1
+                        result["success"]["messages"].append(f"{domain}: created site successfully")
+                        MultisiteController.append_to_google_sheet(domain, SERVER_IP)
                 else:
-                    result["success"]["count"] += 1
-                    result["success"]["messages"].append(f"{domain}: created site successfully")
-
-                    MultisiteController.append_to_google_sheet(domain, SERVER_IP)
+                    # Thất bại (exit code != 0).
+                    # Thông thường, error sẽ có nội dung, nhưng nếu script không in ra stderr,
+                    # vẫn có thể `error` rỗng. Dùng exit code để biết chắc lệnh fail.
+                    print(f"Lệnh lỗi với exit code = {exit_status}")
+                    print(f"Lỗi (stderr): {error}") 
+                
             except Exception as e:
                 result["fail"]["count"] += 1
                 result["fail"]["messages"].append(f"{domain}: {str(e)}")
