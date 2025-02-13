@@ -166,7 +166,7 @@ class RedirectController:
 
         result = {"success": 0, "fail": {"count": 0, "messages": []}}
 
-        for index, domain in enumerate(request.domains):
+        for index, domain in enumerate(request.delete_domains):
             zone_id = None
             zone_id = RedirectController.get_zone_id(domain)
             # Tiếp tục xử lý các phần còn lại nếu zone_id được lấy thành công
