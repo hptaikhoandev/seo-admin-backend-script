@@ -198,8 +198,10 @@ class RedirectController:
                     delete_response = requests.delete(delete_url, headers=headers)
                     if delete_response.status_code == 200:
                         print(f"Deleted Page Rule with ID {rule_id} for {domain}")
+                        result["success"] += 1
                     else:
                         print(f"Failed to delete Page Rule {rule_id} for {domain}: {delete_response.text}")
-
+                        result["fail"]["count"] += 1
+                        result["fail"]["message"].append(f"{domain}: {delete_response.text}")
         return {"status": "success", "result": result}
     
