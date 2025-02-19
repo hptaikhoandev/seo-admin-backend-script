@@ -191,6 +191,8 @@ class RedirectController:
             # Delete all existing Page Rules
             if not existing_rules:
                 print(f"No Page Rules found for {domain}")
+                result["fail"]["count"] += 1
+                result["fail"]["message"].append(f"{domain}: Không tìm thấy Page Rule nào")
             else:
                 for rule in existing_rules:
                     rule_id = rule['id']
