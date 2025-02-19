@@ -6,6 +6,7 @@ import paramiko
 import os
 import io
 from app.models.command_request import CommandRequest
+import asyncio
 
 
 SSH_TEAM=os.getenv('SSH_TEAM')
@@ -15,7 +16,7 @@ headers_backend = {
     'Authorization': f'Bearer {api_token_backend}',
     'Content-Type': 'application/json'
 }
-
+timeout = int(os.getenv('TIMEOUD', 60 * 2))
 class CommandController:
     @staticmethod
     async def fetch_private_key_from_api(key_name: str):
@@ -77,19 +78,29 @@ class CommandController:
                 result["status"] = False
                 result["messages"] = f"{server_ip} - All attempts to connect failed"
                 return result
+            try:
+                # Execute the command and check success
+                output, error, success = await asyncio.wait_for(
+                    CommandController.execute_command(ssh_client, command), timeout=timeout  # Timeout in seconds
+                )
 
-            # Execute the command and check success
-            output, error, success = await CommandController.execute_command(ssh_client, command)
+                # If the command failed, raise an error with the output
+                if not success:
+                    result["status"] = False
+                    result["messages"] = f"{server_ip} - Command failed: {error}"
+                    return result
 
-            # If the command failed, raise an error with the output
-            if not success:
-                result["status"] = False
-                result["messages"] = f"{server_ip} - Command failed: {error}"
+                result["status"] = True
+                result["messages"] = f"{server_ip} - Command run successfully"
                 return result
-
-            result["status"] = True
-            result["messages"] = f"{server_ip} - Command run successfully"
-            return result
+            except asyncio.TimeoutError:
+                result["status"] = True
+                result["messages"] = f"{server_ip} - Command is running. But session was timed out after {timeout} seconds"
+                return result
+            finally:
+                # Ensure the SSH connection is closed
+                if ssh_client:
+                    ssh_client.close()
         except Exception as e:
             result["status"] = False
             result["messages"] = f"{server_ip} - Failed: {str(e)}"
@@ -107,7 +118,7 @@ class CommandController:
             ssh_client = paramiko.SSHClient()
             ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             ssh_client.connect(server_ip, username=username, pkey=private_key)
-            print(f"Connected successfully with username: {username}")
+            print(f"{server_ip} - Connected successfully with username: {username}")
             return ssh_client
         except paramiko.AuthenticationException:
             print(f"Authentication failed for username: {username}")
@@ -115,9 +126,35 @@ class CommandController:
             print(f"Error connecting to server {server_ip}: {str(e)}")
         return None
 
+    # @staticmethod
+    # async def execute_command(ssh_client, command: str):
+    #     """Execute a command on the remote server and capture the output."""
+    #     stdin, stdout, stderr = ssh_client.exec_command(command)
+
+    #     # Read the output and error
+    #     output = stdout.read().decode()
+    #     error = stderr.read().decode()
+
+    #     # Check if the command executed successfully by examining stderr
+    #     if stderr.channel.recv_exit_status() != 0:
+    #         # If exit status is not 0, the command failed
+    #         success = False
+    #     else:
+    #         # Otherwise, the command was successful
+    #         success = True
+
+    #     return output, error, success
+    
     @staticmethod
     async def execute_command(ssh_client, command: str):
         """Execute a command on the remote server and capture the output."""
+        # Offload the blocking command execution to a separate thread
+        output, error, success = await asyncio.to_thread(CommandController._exec_command, ssh_client, command)
+        return output, error, success
+
+    @staticmethod
+    def _exec_command(ssh_client, command: str):
+        """This is a blocking function to execute the command."""
         stdin, stdout, stderr = ssh_client.exec_command(command)
 
         # Read the output and error
