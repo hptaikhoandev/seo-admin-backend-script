@@ -92,6 +92,8 @@ class CommandController:
 
                 result["status"] = True
                 result["messages"] = f"{server_ip} - Command run successfully"
+                if output:
+                    result["messages"] = f"{server_ip} - {output}"
                 return result
             except asyncio.TimeoutError:
                 result["status"] = True
