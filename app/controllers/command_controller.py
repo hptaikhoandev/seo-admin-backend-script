@@ -65,7 +65,7 @@ class CommandController:
         command = request.command
 
         result = {"status": False, "messages": ''}
-        username = None
+        username = ["ubuntu", "ec2-user"]
         private_key = None
         try:
             key_name = f"{team}_{server_ip}"

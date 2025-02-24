@@ -20,6 +20,11 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 async def redirect_domains(request: RedirectRequest):
     return await RedirectController.create_redirect(request)
 
-@router.delete("/script/redirect-domains")
+
 async def delete_redirect_domains(request: DeleteRedirectRequest = Body(...)):
     return await RedirectController.delete_redirect(request)
+
+
+@router.get("/script/get-rules-from-domains")
+async def redirect_history(request: DeleteRedirectRequest = Body(...)):
+    return await RedirectController.redirect_history(request)
