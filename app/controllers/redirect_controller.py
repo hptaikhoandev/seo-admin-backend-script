@@ -209,15 +209,14 @@ class RedirectController:
         return {"status": "success", "result": result}
     
     @staticmethod
-    async def redirect_history(request: RedirectHistoryRequest):
+    async def redirect_history(team, domains):
         result = {"success": 0, "fail": {"count": 0, "messages": []}}
-        list_domains = request.domains.split(',')
+        list_domains = domains
         for index, domain in enumerate(list_domains):
             zone_id = None
             zone_id = RedirectController.get_zone_id(domain)
             # Tiếp tục xử lý các phần còn lại nếu zone_id được lấy thành công
             if not zone_id:
-                print(f"Domains not registered with Cloudflare: {domain}")
                 result["fail"]["count"] += 1
                 fail_message = "chưa đăng ký tên miền với Cloudflare"
                 result["fail"]["messages"].append(f"{domain}: {fail_message}")
@@ -233,7 +232,6 @@ class RedirectController:
                 continue
 
             existing_rules = response.json().get('result', [])
-            print("--existing_rules: ", existing_rules)
             # Delete all existing Page Rules
             if not existing_rules:
                 result["fail"]["count"] += 1

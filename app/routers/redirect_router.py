@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException, FastAPI, Depends, status, Body
+from fastapi import APIRouter, HTTPException, FastAPI, Depends, status, Body, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.controllers.redirect_controller import RedirectController
 from app.models.redirect_request import RedirectRequest
 from app.models.delete_redirect_request import DeleteRedirectRequest
+from app.models.redirect_history_request import RedirectHistoryRequest
 
 
 router = APIRouter()
@@ -25,6 +26,7 @@ async def delete_redirect_domains(request: DeleteRedirectRequest = Body(...)):
     return await RedirectController.delete_redirect(request)
 
 
-# @router.get("/script/get-rules-from-domains")
-# async def redirect_history(request: any = Body(...)):
-#     return await RedirectController.redirect_history(request)
+@router.get("/script/get-rules-from-domains")
+async def redirect_history(team: str, domains: str = Query(...)):
+    domain_list = [domain.strip() for domain in domains.split(',')]
+    return await RedirectController.redirect_history(team, domain_list)
