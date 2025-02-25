@@ -3,7 +3,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.controllers.redirect_controller import RedirectController
 from app.models.redirect_request import RedirectRequest
 from app.models.delete_redirect_request import DeleteRedirectRequest
-from app.models.redirect_history_request import RedirectHistoryRequest
+from app.models.redirect_history_request import RedirectHistoryRequest, DeleteredirectHistoryRequest
 
 
 router = APIRouter()
@@ -30,3 +30,10 @@ async def delete_redirect_domains(request: DeleteRedirectRequest = Body(...)):
 async def redirect_history(team: str, domains: str = Query(...)):
     domain_list = [domain.strip() for domain in domains.split(',')]
     return await RedirectController.redirect_history(team, domain_list)
+
+
+@router.delete("/script/delete-redirect-history")
+async def delete_redirect_history(request: DeleteredirectHistoryRequest = Body(...)):
+    return await RedirectController.delete_redirect_history(request)
+
+
