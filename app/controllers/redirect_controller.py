@@ -1,6 +1,6 @@
 from app.models.redirect_request import RedirectRequest
 from app.models.delete_redirect_request import DeleteRedirectRequest
-from app.models.redirect_history_request import RedirectHistoryRequest
+from app.models.redirect_history_request import RedirectHistoryRequest, DeleteredirectHistoryRequest
 from fastapi import HTTPException
 import requests
 import random
@@ -163,8 +163,6 @@ class RedirectController:
     
     @staticmethod
     async def delete_redirect(request: DeleteRedirectRequest):
-        print(f"====>api_token  {api_token_cf}")
-
         result = {"success": 0, "fail": {"count": 0, "messages": []}}
 
         for index, domain in enumerate(request.delete_domains):
@@ -193,7 +191,7 @@ class RedirectController:
             if not existing_rules:
                 print(f"No Page Rules found for {domain}")
                 result["fail"]["count"] += 1
-                result["fail"]["message"].append(f"{domain}: Không tìm thấy Page Rule nào")
+                result["fail"]["messages"].append(f"{domain}: Không tìm thấy Page Rule nào")
             else:
                 for rule in existing_rules:
                     rule_id = rule['id']
@@ -205,12 +203,12 @@ class RedirectController:
                     else:
                         print(f"Failed to delete Page Rule {rule_id} for {domain}: {delete_response.text}")
                         result["fail"]["count"] += 1
-                        result["fail"]["message"].append(f"{domain}: {delete_response.text}")
+                        result["fail"]["messages"].append(f"{domain}: {delete_response.text}")
         return {"status": "success", "result": result}
     
     @staticmethod
     async def redirect_history(team, domains):
-        result = {"success": 0, "fail": {"count": 0, "messages": []}}
+        result = {"success": 0, "fail": {"count": 0, "messages": []}, "data": []}
         list_domains = domains
         for index, domain in enumerate(list_domains):
             zone_id = None
@@ -235,18 +233,55 @@ class RedirectController:
             # Delete all existing Page Rules
             if not existing_rules:
                 result["fail"]["count"] += 1
-                result["fail"]["message"].append(f"{domain}: Không tìm thấy Page Rule nào")
+                result["fail"]["messages"].append(f"{domain}: Không tìm thấy Page Rule nào")
             else:
+                result["fail"]["count"] += 1
                 for rule in existing_rules:
                     rule_id = rule['id']
-                    # delete_url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/pagerules/{rule_id}"
-                    # delete_response = requests.delete(delete_url, headers=headers)
-                    # if delete_response.status_code == 200:
-                    #     print(f"Deleted Page Rule with ID {rule_id} for {domain}")
-                    #     result["success"] += 1
-                    # else:
-                    #     print(f"Failed to delete Page Rule {rule_id} for {domain}: {delete_response.text}")
-                    #     result["fail"]["count"] += 1
-                    #     result["fail"]["message"].append(f"{domain}: {delete_response.text}")
+                    data = {}
+                    data['id'] = rule_id
+                    data['name'] = domain
+                    data['created_at'] = rule['created_on']
+                    data['updated_at'] = rule['modified_on']
+                    data['value'] = rule['actions']
+                    data['zone_id'] = zone_id
+                    data['domain'] = domain
+                    for target in rule['targets']:
+                        if target['target'] == 'url':
+                            data['name'] = target['constraint']['value']
+                    for action in rule['actions']:
+                        if action['id'] == 'forwarding_url':
+                            data['value'] = action['value']['url']
+                    result['data'].append(data)
+        return {"status": "success", "result": result}
+
+    @staticmethod
+    async def delete_redirect_history(request: DeleteredirectHistoryRequest):
+        result = {"success": 0, "fail": {"count": 0, "messages": []}}
+        zone_id = request.zone_id
+        team = request.team
+        rule_id = request.rule_id
+        # Tiếp tục xử lý các phần còn lại nếu zone_id được lấy thành công
+        if zone_id:
+            # Cloudflare API endpoint to get Page Rules
+            list_url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/pagerules"
+
+            # Get existing Page Rules
+            response = requests.get(list_url, headers=headers)
+            if response.status_code == 200:
+                
+                existing_rules = response.json().get('result', [])
+
+                # Delete all existing Page Rules
+                if existing_rules:
+                    for rule in existing_rules:
+                        rule_id_temp = rule['id']
+                        delete_url = f"https://api.cloudflare.com/client/v4/zones/{zone_id}/pagerules/{rule_id_temp}"
+                        delete_response = requests.delete(delete_url, headers=headers)
+                        if delete_response.status_code == 200:
+                            result["success"] += 1
+                        else:
+                            result["fail"]["count"] += 1
+                            result["fail"]["messages"].append(f"{rule_id}: {delete_response.text}")
         return {"status": "success", "result": result}
     
