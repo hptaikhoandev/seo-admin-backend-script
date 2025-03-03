@@ -46,30 +46,42 @@ class SubDomainController:
         results = []
         server_ip_list = server_ip_list
         # Fetch accounts from API
-        domain = None
-        zone_list_response = requests.get(url_zones, headers=headers_cf)
-        zone_list_result = zone_list_response.json()
-        if zone_list_result.get('success'):
-            for zone in zone_list_result['result']:
-                zone_id = zone["id"]
+       
+        page = 1
+        while True:
+            print("--page: ", page)
+            params = {"page": page}
+            response = requests.get(url_zones, headers=headers_cf, params=params)
+            zone_list_result = response.json()
+            print("--zone_list_result: ", zone_list_result)
+            if zone_list_result.get('success'):
+                for zone in zone_list_result['result']:
+            
+                    zone_id = zone["id"]
+                    
+                    # Step 2: Remove Existing DNS Records
+                    dns_record_url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records'
+                    dns_list_response = requests.get(dns_record_url, headers=headers_cf)
+                    dns_list_result = dns_list_response.json()
+            
+                    if dns_list_result.get('success'):
+                        for record in dns_list_result['result']:
+                            # delete_url = f"{dns_record_url}/{record['id']}"
+                            # requests.delete(delete_url, headers=headers_cf)
+                            type_recode = record["type"]
+                            if type_recode in ["A", "CNAME"]:
+                                # Add to results
+                                resultMessage["success"]["count"] += 1
+                                resultMessage["success"]["messages"].append(f"{zone_id}: created domain in CloudFlare successfully")
+                                record["account_id"] = zone["account"]["id"]
+                                record["zone_id"] = record["id"]
+                                results.append(record)
                 
-                # Step 2: Remove Existing DNS Records
-                dns_record_url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records'
-                dns_list_response = requests.get(dns_record_url, headers=headers_cf)
-                dns_list_result = dns_list_response.json()
-           
-                if dns_list_result.get('success'):
-                    for record in dns_list_result['result']:
-                        # delete_url = f"{dns_record_url}/{record['id']}"
-                        # requests.delete(delete_url, headers=headers_cf)
-                        type_recode = record["type"]
-                        if type_recode in ["A", "CNAME"]:
-                            # Add to results
-                            resultMessage["success"]["count"] += 1
-                            resultMessage["success"]["messages"].append(f"{domain}: created domain in CloudFlare successfully")
-                            record["account_id"] = zone["account"]["id"]
-                            record["zone_id"] = record["id"]
-                            results.append(record)
+            # Check if there are more pages
+            if page >= zone_list_result["result_info"]["total_pages"]:
+                break
+
+            page += 1  # Move to the next page
 
         return {"status": "success", "results": results, "resultMessage": resultMessage}
 
