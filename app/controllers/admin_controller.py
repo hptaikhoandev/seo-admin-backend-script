@@ -22,7 +22,7 @@ api_token_cf = os.getenv('API_TOKEN_CF')
 AWS_ACCESS_KEY=os.getenv('AWS_ACCESS_KEY')
 AWS_SECRET=os.getenv('AWS_SECRET')
 
-SPREADSHEET_ID = os.getenv('SPREADSHEET_ID', '')
+SPREADSHEET_ID = os.getenv('SPREADSHEET_ID1', '')
 SHEET_NAME = os.getenv('SHEET_NAME', 'server')
 SHEET_CONFIG_FILE = os.getenv('SHEET_CONFIG_FILE', '')
 
