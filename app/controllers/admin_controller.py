@@ -22,6 +22,10 @@ api_token_cf = os.getenv('API_TOKEN_CF')
 AWS_ACCESS_KEY=os.getenv('AWS_ACCESS_KEY')
 AWS_SECRET=os.getenv('AWS_SECRET')
 
+SPREADSHEET_ID = os.getenv('SPREADSHEET_ID', '')
+SHEET_NAME = os.getenv('SHEET_NAME', 'server')
+SHEET_CONFIG_FILE = os.getenv('SHEET_CONFIG_FILE', '')
+
 class AdminController:
     @staticmethod
     def send_to_telegram(valuesGG):
@@ -69,13 +73,9 @@ class AdminController:
     @staticmethod
     def append_to_google_sheet(values):
         try:
-            # Thông tin Google Sheets
-            SPREADSHEET_ID = '1D0fw1ws_ov04IO0PNRV3CbgrH6AvWhIqXRKoTLFRpTM'
-            SHEET_NAME = 'server'  # Thay bằng tên sheet
-
             # Load credentials từ file service account
             creds = Credentials.from_service_account_file(
-                'app/key/seo-admin-442609-152c2f330723.json',
+                SHEET_CONFIG_FILE,
                 scopes=["https://www.googleapis.com/auth/spreadsheets"]
             )
             service = build('sheets', 'v4', credentials=creds)
