@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import item_router
 from app.routers import domain_router
+from app.routers import subdomain_router
 from app.routers import redirect_router
 from app.routers import clonesite_router
 from app.routers import multisite_router
@@ -36,6 +37,7 @@ app.add_middleware(
 # Đăng ký router
 app.include_router(item_router.router)
 app.include_router(domain_router.router)
+app.include_router(subdomain_router.router)
 app.include_router(redirect_router.router)
 app.include_router(clonesite_router.router)
 app.include_router(multisite_router.router)
