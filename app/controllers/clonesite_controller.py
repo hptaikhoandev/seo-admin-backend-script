@@ -21,6 +21,10 @@ headers_backend = {
     'Authorization': f'Bearer {api_token_backend}',
     'Content-Type': 'application/json'
 }
+
+SPREADSHEET_ID = os.getenv('SPREADSHEET_ID0', '')
+SHEET_NAME = os.getenv('SHEET_NAME', 'server')
+SHEET_CONFIG_FILE = os.getenv('SHEET_CONFIG_FILE', '')
 class ClonesiteController:
     @staticmethod
     async def fetch_private_key_from_api(key_name: str):
@@ -65,13 +69,9 @@ class ClonesiteController:
     @staticmethod
     def append_to_google_sheet(domain, SERVER_IP):
         try:
-            # Thông tin Google Sheets
-            SPREADSHEET_ID = '1E6f0UZ_e1Ec4m_vI2coJHebIX8DiEq8gam0PeiEdOXY'  # Thay bằng ID của Google Sheet
-            SHEET_NAME = 'server'  # Thay bằng tên sheet
-
             # Load credentials từ file service account
             creds = Credentials.from_service_account_file(
-                'app/key/seo-admin-442609-152c2f330723.json',
+                SHEET_CONFIG_FILE,
                 scopes=["https://www.googleapis.com/auth/spreadsheets"]
             )
             service = build('sheets', 'v4', credentials=creds)

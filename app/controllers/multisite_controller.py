@@ -19,7 +19,7 @@ headers_backend = {
     'Content-Type': 'application/json'
 }
 
-SPREADSHEET_ID = os.getenv('SPREADSHEET_ID', '')
+SPREADSHEET_ID = os.getenv('SPREADSHEET_ID0', '')
 SHEET_NAME = os.getenv('SHEET_NAME', 'server')
 SHEET_CONFIG_FILE = os.getenv('SHEET_CONFIG_FILE', '')
 
