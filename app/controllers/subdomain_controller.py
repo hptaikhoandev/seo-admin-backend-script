@@ -49,11 +49,9 @@ class SubDomainController:
        
         page = 1
         while True:
-            print("--page: ", page)
             params = {"page": page, "per_page": 50}
             response = requests.get(url_zones, headers=headers_cf, params=params)
             zone_list_result = response.json()
-            print("--zone_list_result: ", zone_list_result)
             if zone_list_result.get('success'):
                 for zone in zone_list_result['result']:
             
