@@ -60,7 +60,8 @@ class SubDomainController:
                     name_servers_str = ", ".join(zone["name_servers"]) if zone.get("name_servers") else None
                     ns_record = {}
                     ns_record['id'] = zone_id
-                    ns_record['name'] = zone["name"]
+                    ns_record['domain'] = zone["name"]
+                    ns_record['name'] = name_servers_str
                     ns_record['type'] = 'NS'
                     ns_record['content'] = name_servers_str
                     ns_record['proxiable'] = False
@@ -88,6 +89,7 @@ class SubDomainController:
                                 resultMessage["success"]["messages"].append(f"{zone_id}: created domain in CloudFlare successfully")
                                 record["account_id"] = zone["account"]["id"]
                                 record["zone_id"] = record["id"]
+                                record['domain'] = zone["name"]
                                 results.append(record)
                 
             # Check if there are more pages
