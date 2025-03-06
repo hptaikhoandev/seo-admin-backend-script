@@ -51,12 +51,27 @@ class SubDomainController:
         while True:
             params = {"page": page, "per_page": 50}
             response = requests.get(url_zones, headers=headers_cf, params=params)
+            
             zone_list_result = response.json()
+            
             if zone_list_result.get('success'):
                 for zone in zone_list_result['result']:
-            
                     zone_id = zone["id"]
-                    
+                    name_servers_str = ", ".join(zone["name_servers"]) if zone.get("name_servers") else None
+                    ns_record = {}
+                    ns_record['id'] = zone_id
+                    ns_record['name'] = zone["name"]
+                    ns_record['type'] = 'NS'
+                    ns_record['content'] = name_servers_str
+                    ns_record['proxiable'] = False
+                    ns_record['proxied'] = False
+                    ns_record['ttl'] = 0
+                    ns_record['created_on'] = zone["created_on"]
+                    ns_record['modified_on'] = zone["modified_on"]
+                    ns_record["account_id"] = zone["account"]["id"]
+                    ns_record["zone_id"] = zone_id
+                    results.append(ns_record)
+
                     # Step 2: Remove Existing DNS Records
                     dns_record_url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records'
                     dns_list_response = requests.get(dns_record_url, headers=headers_cf)
