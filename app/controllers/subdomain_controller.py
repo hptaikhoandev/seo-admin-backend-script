@@ -40,6 +40,28 @@ class SubDomainController:
             return None
         
     @staticmethod
+    async def fetch_accounts_from_api(team: str):
+        if team == 'admin':
+            team = ''
+        params = {
+            "page": 1,
+            "limit": 10000,
+            "search": team,
+            "sortBy": "team",
+            "sortDesc": "false",
+        }
+        response = requests.get(url_backend, params=params, headers=headers_backend)
+        # Kiểm tra lỗi HTTP
+        response.raise_for_status()
+        try:
+            data = response.json() 
+        except requests.JSONDecodeError:
+            raise ValueError("Response is not a valid JSON")
+        accounts = data.get("data", []) 
+        # Trả về danh sách account
+        return accounts
+    
+    @staticmethod
     async def get_dns_records(server_ip_list):
         resultMessage = {"success": {"count": 0, "messages": []}, "fail": {"count": 0, "messages": []}}
         url_zones = "https://api.cloudflare.com/client/v4/zones"
@@ -57,21 +79,6 @@ class SubDomainController:
             if zone_list_result.get('success'):
                 for zone in zone_list_result['result']:
                     zone_id = zone["id"]
-                    name_servers_str = ", ".join(zone["name_servers"]) if zone.get("name_servers") else None
-                    ns_record = {}
-                    ns_record['id'] = zone_id
-                    ns_record['domain'] = zone["name"]
-                    ns_record['name'] = name_servers_str
-                    ns_record['type'] = 'NS'
-                    ns_record['content'] = name_servers_str
-                    ns_record['proxiable'] = False
-                    ns_record['proxied'] = False
-                    ns_record['ttl'] = 0
-                    ns_record['created_on'] = zone["created_on"]
-                    ns_record['modified_on'] = zone["modified_on"]
-                    ns_record["account_id"] = zone["account"]["id"]
-                    ns_record["zone_id"] = zone_id
-                    results.append(ns_record)
 
                     # Step 2: Remove Existing DNS Records
                     dns_record_url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records'
@@ -99,4 +106,62 @@ class SubDomainController:
             page += 1  # Move to the next page
 
         return {"status": "success", "results": results, "resultMessage": resultMessage}
+    
+
+    @staticmethod
+    async def get_ns_dns_records(search, page, limit, team):
+       
+        resultMessage = {"success": {"count": 0, "messages": []}, "fail": {"count": 0, "messages": []}}
+        domain_list_split = [domain.strip() for domain in search.split(",")]
+       
+        results = []
+        admin_accounts = await SubDomainController.fetch_accounts_from_api(team)
+        
+        accounts = []
+        if team == 'admin':
+            accounts = [account['account_id'] for account in admin_accounts]
+        else:
+            accounts = [account['account_id'] for account in admin_accounts if account["team"] == team]
+    
+        for domain in domain_list_split:
+            url_zones = "https://api.cloudflare.com/client/v4/zones"
+         
+            page = 1
+            while True:
+                params = {"page": page, "per_page": 50, "name": str(domain)}
+                response = requests.get(url_zones, headers=headers_cf, params=params)
+                
+                zone_list_result = response.json()
+                if zone_list_result.get('success'):
+                    for zone in zone_list_result['result']:
+                        account_id = zone["account"]["id"]
+                        if account_id not in accounts:
+                            continue
+                        team_name = next((item['team'] for item in admin_accounts if item['account_id'] == account_id), None)
+                        zone_id = zone["id"]
+                        name_servers_str = ", ".join(zone["name_servers"]) if zone.get("name_servers") else None
+                        ns_record = {}
+                        ns_record['id'] = zone_id
+                        ns_record['domain'] = zone["name"]
+                        ns_record['name'] = name_servers_str
+                        ns_record['type'] = 'NS'
+                        ns_record['content'] = name_servers_str
+                        ns_record['proxiable'] = False
+                        ns_record['proxied'] = False
+                        ns_record['ttl'] = 0
+                        ns_record['created_on'] = zone["created_on"]
+                        ns_record['modified_on'] = zone["modified_on"]
+                        ns_record["account_id"] = account_id
+                        ns_record["zone_id"] = zone_id
+                        ns_record["team"] = team_name
+
+                        results.append(ns_record)
+                    
+                # Check if there are more pages
+                if page >= zone_list_result["result_info"]["total_pages"]:
+                    break
+
+                page += 1  # Move to the next page
+
+        return {"status": "success", "data": results, "resultMessage": resultMessage, "total": len(results), "page": page, "limit": limit}
 

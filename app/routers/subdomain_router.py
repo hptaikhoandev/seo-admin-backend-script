@@ -18,3 +18,9 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
 async def get_dns_records(server_ip_list: str = Query(...)):
     return await SubDomainController.get_dns_records(server_ip_list)
 
+
+@router.get("/script/get-ns-dns-records")
+async def get_dns_records(search: str = Query(...), page: int = Query(...), limit: int = Query(...), team: str = Query(...)):
+    return await SubDomainController.get_ns_dns_records(search, page, limit, team)
+
+
