@@ -61,21 +61,18 @@ class SubDomainController:
         # Trả về danh sách account
         return accounts
     
-    @staticmethod
-    async def get_dns_records(server_ip_list):
+    async def get_dns_records(server_ip_list, page, per_page):
         resultMessage = {"success": {"count": 0, "messages": []}, "fail": {"count": 0, "messages": []}}
         url_zones = "https://api.cloudflare.com/client/v4/zones"
         results = []
         server_ip_list = server_ip_list
         # Fetch accounts from API
-       
-        page = 1
-        while True:
-            params = {"page": page, "per_page": 50}
+        total_page = 0
+        try:
+            params = {"page": page, "per_page": per_page}
             response = requests.get(url_zones, headers=headers_cf, params=params)
             
             zone_list_result = response.json()
-            
             if zone_list_result.get('success'):
                 for zone in zone_list_result['result']:
                     zone_id = zone["id"]
@@ -98,17 +95,12 @@ class SubDomainController:
                                 record["zone_id"] = record["id"]
                                 record['domain'] = zone["name"]
                                 results.append(record)
-                
-            # Check if there are more pages
-            if page >= zone_list_result["result_info"]["total_pages"]:
-                break
-
-            page += 1  # Move to the next page
-
-        return {"status": "success", "results": results, "resultMessage": resultMessage}
+            total_page = zone_list_result["result_info"]["total_pages"]
+        except Exception as e:
+            print("error get_dns_records")
+        return {"status": "success", "results": results, "page": page, "total_page": total_page, "resultMessage": resultMessage}
     
 
-    @staticmethod
     async def get_ns_dns_records(search, page, limit, team):
        
         resultMessage = {"success": {"count": 0, "messages": []}, "fail": {"count": 0, "messages": []}}
