@@ -1,4 +1,9 @@
 from pydantic import BaseModel
 
 class SubDomainRequest(BaseModel):
-    server_ip_list: str
+    id: str
+    dns_id: str
+    zone_id: str
+    name: str
+    content: str
+    account_id: str
