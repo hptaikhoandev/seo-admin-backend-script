@@ -24,3 +24,9 @@ async def get_dns_records(search: str = Query(...), page: int = Query(...), limi
     return await SubDomainController.get_ns_dns_records(search, page, limit, team)
 
 
+@router.post("/script/update-dns-record")
+async def get_dns_records(request: SubDomainRequest):
+    return await SubDomainController.update_dns_records(request)
+
+
+

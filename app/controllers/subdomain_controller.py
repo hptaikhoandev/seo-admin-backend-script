@@ -81,7 +81,7 @@ class SubDomainController:
                     dns_record_url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records'
                     dns_list_response = requests.get(dns_record_url, headers=headers_cf)
                     dns_list_result = dns_list_response.json()
-            
+                   
                     if dns_list_result.get('success'):
                         for record in dns_list_result['result']:
                             # delete_url = f"{dns_record_url}/{record['id']}"
@@ -92,7 +92,8 @@ class SubDomainController:
                                 resultMessage["success"]["count"] += 1
                                 resultMessage["success"]["messages"].append(f"{zone_id}: created domain in CloudFlare successfully")
                                 record["account_id"] = zone["account"]["id"]
-                                record["zone_id"] = record["id"]
+                                record["zone_id"] = zone_id
+                                record["dns_id"] = record["id"]
                                 record['domain'] = zone["name"]
                                 results.append(record)
             total_page = zone_list_result["result_info"]["total_pages"]
@@ -156,4 +157,32 @@ class SubDomainController:
                 page += 1  # Move to the next page
 
         return {"status": "success", "data": results, "resultMessage": resultMessage, "total": len(results), "page": page, "limit": limit}
+
+    async def update_dns_records(request: SubDomainRequest):
+        resultMessage = {"success": {"count": 0, "messages": []}, "fail": {"count": 0, "messages": []}}
+        results = []
+        try:
+            id = request.id
+            dns_id = request.dns_id
+            zone_id = request.zone_id
+            name = request.name
+            content = request.content
+            account_id = request.account_id
+        
+            url_zones = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{dns_id}'
+        
+            rule_data = {"content": content}
+        
+            update_response = requests.patch(url_zones, headers=headers_cf, json=rule_data)
+           
+            resultMessage["success"]["count"] += 1
+            resultMessage["success"]["messages"].append(f"{name}: updated in CloudFlare successfully")
+            results.append({'name': name, 'content': content})
+        except Exception as e:
+            resultMessage["fail"]["count"] += 1
+            resultMessage["fail"]["messages"].append(f"{name}: updated in CloudFlare failed")
+            results.append({'name': '', 'content': ''})
+            print("error get_dns_records")
+
+        return {"status": "success", "data": results, "resultMessage": resultMessage}
 
