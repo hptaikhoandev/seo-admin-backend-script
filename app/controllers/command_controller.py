@@ -67,13 +67,33 @@ class CommandController:
         result = {"status": False, "messages": ''}
         username = ["ubuntu", "ec2-user"]
         private_key = None
+        connected_user = None
         try:
             key_name = f"{team}_{server_ip}"
             if SSH_TEAM and team in SSH_TEAM:
                 username = await CommandController.fetch_username_from_api(key_name)
+                connected_user = username
             private_key = await CommandController.fetch_private_key_from_api(key_name)
             # Attempt to connect to the server
-            ssh_client = await CommandController.connect_to_server(server_ip, username, private_key)
+            ssh_client = None
+            if connected_user:
+                ssh_client = await CommandController.connect_to_server(server_ip, username, private_key)
+            else:
+                # Thử kết nối với từng user
+                for element in username:
+                    try:
+                        ssh_client = await CommandController.connect_to_server(server_ip, element, private_key)
+                        if ssh_client:
+                            connected_user = element
+                            print(f"Successfully connected with {element}")
+                            break
+                    except paramiko.AuthenticationException:
+                        print(f"Authentication failed for username: {element}")
+                        continue
+                    except Exception as e:
+                        print(f"Error connecting with username {element}: {str(e)}")
+                        continue
+
             if not ssh_client:
                 result["status"] = False
                 result["messages"] = f"{server_ip} - All attempts to connect failed"
