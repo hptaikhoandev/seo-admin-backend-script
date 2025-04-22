@@ -176,79 +176,31 @@ class MigratesiteController:
             sftp.close()
 
             # Execute the command on target server
+            # Execute the command on target server
             source_domain = request.source_domain
-            
-            # This command runs on target server but connects to source server
+
+            # Thêm timeout dài hơn
             command = f"sudo bash {REMOTE_SCRIPT_PATH} {TARGET_IP} {target_user} {REMOTE_KEY_PATH} {source_domain}"
-            
+
             print(f"Executing: {command}")
-            stdin, stdout, stderr = ssh_client.exec_command(command)
+            stdin, stdout, stderr = ssh_client.exec_command(command, timeout=300)  # Tăng timeout lên 5 phút
 
-            # Delay to close the SSH connection after execution
-            def delayed_close(ssh_client, delay):
-                time.sleep(delay)
-                ssh_client.close()
+            # Đọc output theo thời gian thực
+            output = ""
+            for line in iter(stdout.readline, ""):
+                print(line, end="")
+                output += line
 
-            # Start a background thread to close the SSH connection after 30 seconds
-            thread = threading.Thread(target=delayed_close, args=(ssh_client, 30))
-            thread.start()
-
-            output = stdout.read().decode()
             error = stderr.read().decode()
-            
-            ssh_client.close() # Done task in source server, close connection
+            exit_status = stdout.channel.recv_exit_status()  # Đợi đến khi lệnh hoàn tất
 
-
-            ### Connect to target server to execute command
-            # ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-            # # Try connecting to target with different usernames
-            # connected_user = None
-            # connection_errors = []
-            # for USERNAME in TARGET_USERNAMES:
-            #     try:
-            #         ssh_client.connect(TARGET_IP, username=USERNAME, pkey=target_private_key)
-            #         connected_user = USERNAME
-            #         print(f"Connected successfully to target with username: {USERNAME}")
-            #         break
-            #     except Exception as e:
-            #         print(f"Error connecting to target with username {USERNAME}: {str(e)}")
-            #         connection_errors.append(str(e))
-
-            # # Check if connection failed
-            # if not connected_user:
-            #     if all("Errno 13" in error for error in connection_errors):
-            #         raise PermissionError("All attempts to connect to target server failed with Errno 13: Permission denied")
-            #     else:
-            #         raise Exception("All attempts to connect to target server failed with different errors")
-            # command = f"sudo bash {REMOTE_RESTORE_SCRIPT_PATH}"
-            
-            # print(f"Executing: {command}")
-            # stdin, stdout, stderr = ssh_client.exec_command(command)
-
-            # # Delay to close the SSH connection after execution
-            # def delayed_close(ssh_client, delay):
-            #     time.sleep(delay)
-            #     ssh_client.close()
-
-            # # Start a background thread to close the SSH connection after 30 seconds
-            # thread = threading.Thread(target=delayed_close, args=(ssh_client, 60))
-            # thread.start()
-
-            # output = stdout.read().decode()
-            # error = stderr.read().decode()
-            
-            # ssh_client.close() # Done task in source server, close connection
-
-
-            if error.strip():
+            if exit_status != 0:
+                print(f"Command exited with status {exit_status}")
                 result["fail"]["count"] += 1
-                result["fail"]["messages"].append(error.strip())
+                result["fail"]["messages"].append(f"Command failed with exit code {exit_status}: {error}")
             else:
                 result["success"]["count"] += 1
                 result["success"]["messages"].append(f"{request.source_domain}: migrate site successfully")
-                # Optional: Add to Google Sheet
-                # MigratesiteController.append_to_google_sheet(target_domain, TARGET_IP)
         except Exception as e:
             print(f"Exception Error: {str(e)}")     
             result["fail"]["count"] += 1
