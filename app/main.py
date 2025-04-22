@@ -5,6 +5,7 @@ from app.routers import domain_router
 from app.routers import subdomain_router
 from app.routers import redirect_router
 from app.routers import clonesite_router
+from app.routers import migratesite_router
 from app.routers import multisite_router
 from app.routers import admin_router
 from app.routers import dashboard_router
@@ -40,6 +41,7 @@ app.include_router(domain_router.router)
 app.include_router(subdomain_router.router)
 app.include_router(redirect_router.router)
 app.include_router(clonesite_router.router)
+app.include_router(migratesite_router.router)
 app.include_router(multisite_router.router)
 app.include_router(destroysite_router.router)
 app.include_router(admin_router.router)
