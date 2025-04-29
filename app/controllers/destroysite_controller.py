@@ -106,7 +106,7 @@ class DestroysiteController:
     async def destroy_site(request: DestroysiteRequest):
         SERVER_IP = request.server_ip
         TEAM = request.team
-        USERNAMES = ["ubuntu", "ec2-user"]
+        USERNAMES = ["root", "ubuntu", "ec2-user"]
         LOCAL_SCRIPT_SAOLUU_PATH = "app/script/wptt-saoluu.sh"
         REMOTE_SCRIPT_SAOLUU_PATH = "/tmp/remote_wptt-saoluu.sh"
         LOCAL_SCRIPT_XOA_PATH = "app/script/wptt-xoa-website.sh"

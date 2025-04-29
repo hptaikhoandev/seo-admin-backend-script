@@ -153,7 +153,7 @@ class DashboardController:
     async def count_domains(server_ip: str = Query(...), team: str = Query(...)):
         SERVER_IP = server_ip
         TEAM = team
-        USERNAMES = ["ubuntu", "ec2-user"]
+        USERNAMES = ["root", "ec2-user", "ubuntu"]
         LOCAL_SCRIPT_PATH = "app/script/wptt-list-domain.sh"
         REMOTE_SCRIPT_PATH = "/tmp/remote_wptt-list-domain.sh"
         result = {"success": 0, "fail": {"count": 0, "messages": []}}

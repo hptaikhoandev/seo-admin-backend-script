@@ -106,7 +106,7 @@ class MultisiteController:
     async def multi_site(request: MultisiteRequest):
         SERVER_IP = request.server_ip
         TEAM = request.team
-        USERNAMES = ["ubuntu", "ec2-user"]
+        USERNAMES = ["root", "ec2-user", "ubuntu"]
         LOCAL_SCRIPT_PATH = "app/script/auto_add_multiple_wp_sites.sh"
         REMOTE_SCRIPT_PATH = "/tmp/remote_auto_add_multiple_wp_sites.sh"
         result = {"success": {"count": 0, "messages": []}, "fail": {"count": 0, "messages": []}} 

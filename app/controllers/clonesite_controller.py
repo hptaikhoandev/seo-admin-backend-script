@@ -107,7 +107,7 @@ class ClonesiteController:
     async def clone_site(request: ClonesiteRequest):
         SERVER_IP = request.server_ip
         TEAM = request.team
-        USERNAMES = ["ubuntu", "ec2-user"]
+        USERNAMES = ["root", "ec2-user", "ubuntu"]
         LOCAL_SCRIPT_PATH = "app/script/wptt-sao-chep-website.sh"
         REMOTE_SCRIPT_PATH = "/tmp/remote_wptt-sao-chep-website.sh"
         result = {"success": {"count": 0, "messages": []}, "fail": {"count": 0, "messages": []}} 

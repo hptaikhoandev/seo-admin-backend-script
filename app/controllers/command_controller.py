@@ -65,7 +65,7 @@ class CommandController:
         command = request.command
 
         result = {"status": False, "messages": ''}
-        username = ["ubuntu", "ec2-user"]
+        username = ["ubuntu", "ec2-user", "root"]
         private_key = None
         connected_user = None
         try:
