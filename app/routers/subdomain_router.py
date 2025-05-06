@@ -28,5 +28,6 @@ async def get_dns_records(search: str = Query(...), page: int = Query(...), limi
 async def get_dns_records(request: SubDomainRequest):
     return await SubDomainController.update_dns_records(request)
 
-
-
+@router.get("/script/get-dns-records-by-name")
+async def get_domain_info(search: str = Query(...), team: str = Query(...)):
+    return await SubDomainController.get_dns_records_by_name(search, team)

@@ -38,7 +38,19 @@ class SubDomainController:
         else:
             print(f"Failed to get zone ID for {domain}: {result.get('errors', 'Unknown error')}")
             return None
-        
+    
+    @staticmethod
+    def clean_url(url):
+        # Remove 'https://' from the start
+        if url.startswith('https://'):
+            url = url[8:]  # Remove the first 8 characters
+        if url.startswith('http://'):
+            url = url[7:]  # Remove the first 8 characters
+        # Remove trailing slashes
+        url = url.rstrip('/')
+
+        return url
+     
     @staticmethod
     async def fetch_accounts_from_api(team: str):
         if team == 'admin':
@@ -186,3 +198,40 @@ class SubDomainController:
 
         return {"status": "success", "data": results, "resultMessage": resultMessage}
 
+    async def get_dns_records_by_name(search, team):
+        resultMessage = {"success": {"count": 0, "messages": []}, "fail": {"count": 0, "messages": []}}
+        results = []
+        admin_accounts = await SubDomainController.fetch_accounts_from_api(team)
+        accounts = []
+        if team == 'admin':
+            accounts = [account['account_id'] for account in admin_accounts]
+        else:
+            accounts = [account['account_id'] for account in admin_accounts if account["team"] == team]
+        try:
+            url_zones = f'https://api.cloudflare.com/client/v4/zones?name={SubDomainController.clean_url(search)}'
+            response = requests.get(url_zones, headers=headers_cf)
+            zone_list_result = response.json()
+            if zone_list_result.get('success'):
+                for zone in zone_list_result['result']:
+                    zone_id = zone["id"]
+                    if(zone["account"]["id"] not in accounts):
+                        continue
+                    dns_record_url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records'
+                    dns_list_response = requests.get(dns_record_url, headers=headers_cf)
+                    dns_list_result = dns_list_response.json()
+                    if dns_list_result.get('success'):
+                        for record in dns_list_result['result']:
+                            # Add to results
+                            resultMessage["success"]["count"] += 1
+                            resultMessage["success"]["messages"].append(f"{zone_id}: created domain in CloudFlare successfully")
+                            record["team"] = team
+                            record["account_id"] = zone["account"]["id"]
+                            record["zone_id"] = zone_id
+                            record["dns_id"] = record["id"]
+                            record['domain'] = zone["name"]
+                            results.append(record)
+            
+        except Exception as e:
+            print("error get_dns_records_by_name", e)
+        return {"status": "success", "data": results, "resultMessage": resultMessage, "limit": 10, "page": 1, "total": len(results)}
+    
