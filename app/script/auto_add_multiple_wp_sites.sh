@@ -7,7 +7,8 @@
 idusername="admin"
 mypassword="hp@123@a"
 emailwp="ad@gmail.com"
-link_source_wp="https://devmkt.s3.amazonaws.com/latest.tar.gz"
+# link_source_wp="https://devmkt.s3.amazonaws.com/latest.tar.gz"
+link_source_wp="https://wordpress.org/latest.tar.gz"
 
 #crontab declaration
 phut=4320 #60*24*3 (3 ngày)
@@ -303,7 +304,7 @@ ln -s /usr/local/lsws/$domain /home/$domain
 
 
 # add group
-usermod -a -G wptangtoc-ols $USER
+# usermod -a -G wptangtoc-ols $USER
 
 if [[ ! -f /usr/local/lsws/$domain/.bashrc ]];then
 cp -rf /etc/skel/. /usr/local/lsws/$domain
@@ -419,6 +420,7 @@ RewriteRule . /index.php [L]
 
   /usr/local/bin/wp language core install vi --path=/usr/local/lsws/"$domain"/html --activate --allow-root >/dev/null 2>&1
   /usr/local/bin/wp option update timezone_string "Asia/Ho_Chi_Minh" --path=/usr/local/lsws/"$domain"/html --allow-root >/dev/null 2>&1
+  /usr/local/bin/wp option update blog_public 0 --path=/usr/local/lsws/"$domain"/html --allow-root >/dev/null 2>&1
   /usr/local/bin/wp rewrite structure '/%postname%/' --path=/usr/local/lsws/"$domain"/html --allow-root >/dev/null 2>&1
     sleep 0.4
 

@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, FastAPI, Depends, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.controllers.subdomain_controller import SubDomainController
 from app.models.subdomain_request import SubDomainRequest
+from app.models.subdomainHistory_request import SubDomaiHistoryRequest
 
 
 router = APIRouter()
@@ -31,3 +32,7 @@ async def get_dns_records(request: SubDomainRequest):
 @router.get("/script/get-dns-records-by-name")
 async def get_domain_info(search: str = Query(...), team: str = Query(...)):
     return await SubDomainController.get_dns_records_by_name(search, team)
+
+@router.post("/script/add-subdomainHistory")
+async def create_dns_record(request: SubDomaiHistoryRequest):
+    return await SubDomainController.add_subdomainHistory(request)
