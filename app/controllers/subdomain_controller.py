@@ -1,4 +1,5 @@
 from app.models.subdomain_request import SubDomainRequest
+from app.models.subdomainHistory_request import SubDomaiHistoryRequest
 from dotenv import load_dotenv
 import os
 import requests
@@ -17,6 +18,7 @@ headers_cf = {
 }
 api_token_backend = os.getenv('API_TOKEN_BACKEND')
 url_backend = f"{os.getenv('URL_DOMAIN_BACKEND')}/accountIds"
+url_backend_subdomainHistory = f"{os.getenv('URL_DOMAIN_BACKEND')}/subdomain-history"
 headers_backend = {
     'Authorization': f'Bearer {api_token_backend}',
     'Content-Type': 'application/json'
@@ -50,7 +52,7 @@ class SubDomainController:
         url = url.rstrip('/')
 
         return url
-        
+     
     @staticmethod
     async def fetch_accounts_from_api(team: str):
         if team == 'admin':
@@ -95,6 +97,7 @@ class SubDomainController:
                     dns_list_result = dns_list_response.json()
                    
                     if dns_list_result.get('success'):
+                        
                         for record in dns_list_result['result']:
                             # delete_url = f"{dns_record_url}/{record['id']}"
                             # requests.delete(delete_url, headers=headers_cf)
@@ -175,19 +178,34 @@ class SubDomainController:
         results = []
         
         try:
-            id = request.id
+            # id = request.id
             dns_id = request.dns_id
             zone_id = request.zone_id
             name = request.name
             content = request.content
             account_id = request.account_id
-        
+            # type = request.type
+            # team = request.team
+
             url_zones = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{dns_id}'
         
             rule_data = {"content": content}
         
             update_response = requests.patch(url_zones, headers=headers_cf, json=rule_data)
-           
+
+            # if update_response.status_code == 200:
+            #     await SubDomainController.add_subdomainHistory(
+            #         {
+            #             "dns_id": dns_id,
+            #             "zone_id" : zone_id,
+            #             "type" : type,
+            #             "name" : name,
+            #             "content" : content,
+            #             "account_id" : account_id,
+            #             "team" : team
+            #         }
+            #     )
+
             resultMessage["success"]["count"] += 1
             resultMessage["success"]["messages"].append(f"{name}: updated in CloudFlare successfully")
             results.append({'name': name, 'content': content})
@@ -198,7 +216,7 @@ class SubDomainController:
             print("error get_dns_records")
 
         return {"status": "success", "data": results, "resultMessage": resultMessage}
-    
+
     async def get_dns_records_by_name(search, team):
         resultMessage = {"success": {"count": 0, "messages": []}, "fail": {"count": 0, "messages": []}}
         results = []
@@ -208,31 +226,119 @@ class SubDomainController:
             accounts = [account['account_id'] for account in admin_accounts]
         else:
             accounts = [account['account_id'] for account in admin_accounts if account["team"] == team]
+        
         try:
             url_zones = f'https://api.cloudflare.com/client/v4/zones?name={SubDomainController.clean_url(search)}'
             response = requests.get(url_zones, headers=headers_cf)
             zone_list_result = response.json()
+            
             if zone_list_result.get('success'):
                 for zone in zone_list_result['result']:
                     zone_id = zone["id"]
                     if(zone["account"]["id"] not in accounts):
                         continue
+                    
                     dns_record_url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records'
                     dns_list_response = requests.get(dns_record_url, headers=headers_cf)
                     dns_list_result = dns_list_response.json()
+                    
                     if dns_list_result.get('success'):
+                        # Get latest DNS records from db
+                        old_dns_records_request = requests.get(url_backend_subdomainHistory + '/last-subdomain', 
+                                                            headers=headers_backend, 
+                                                            params={"page": 1, "limit": 10, "search": search, 
+                                                                    "sortBy": "account_id", "sortDesc": "false", "team": team})
+                        old_dns_records = old_dns_records_request.json()
+                        
                         for record in dns_list_result['result']:
-                            # Add to results
-                            resultMessage["success"]["count"] += 1
-                            resultMessage["success"]["messages"].append(f"{zone_id}: created domain in CloudFlare successfully")
-                            record["team"] = team
-                            record["account_id"] = zone["account"]["id"]
-                            record["zone_id"] = zone_id
-                            record["dns_id"] = record["id"]
-                            record['domain'] = zone["name"]
-                            results.append(record)
-
+                            if(record["type"] in ["A", "CNAME"]):
+                                # Check if the record already exists in the database
+                                record_exists = False
+                                content_changed = False
+                                old_record_match = None
+                                
+                                for old_record in old_dns_records['data']:
+                                    if old_record['dns_id'] == record['id']:
+                                        record_exists = True
+                                        old_record_match = old_record
+                                        # Kiểm tra nếu content đã thay đổi
+                                        if old_record['content'] != record['content']:
+                                            content_changed = True
+                                        break
+                                
+                                # Nếu record chưa tồn tại hoặc đã tồn tại nhưng nội dung đã thay đổi
+                                if not record_exists or (record_exists and content_changed):
+                                    rule_data = {
+                                        "dns_id": record["id"],
+                                        "zone_id": zone_id,
+                                        "name": record["name"],
+                                        "type": record["type"],
+                                        "content": record["content"],
+                                        "account_id": zone["account"]["id"],
+                                        "team": team
+                                    }
+                                    
+                                    update_response = requests.post(url_backend_subdomainHistory, headers=headers_backend, json=rule_data)
+                                    print("update_response", update_response.json())
+                                    
+                                    # Thêm thông báo phù hợp vào resultMessage
+                                    if not record_exists:
+                                        resultMessage["success"]["messages"].append(f"{zone_id}: created new domain in CloudFlare successfully")
+                                    else:
+                                        resultMessage["success"]["messages"].append(f"{zone_id}: updated domain content in CloudFlare successfully")
+                                
+                                # Add to results
+                                resultMessage["success"]["count"] += 1
+                                record["team"] = team
+                                record["account_id"] = zone["account"]["id"]
+                                record["zone_id"] = zone_id
+                                record["dns_id"] = record["id"]
+                                record['domain'] = zone["name"]
+                                results.append(record)
+        
         except Exception as e:
-            print("error get_dns_records_by_name")
+            print("error get_dns_records_by_name", e)
+        
         return {"status": "success", "data": results, "resultMessage": resultMessage, "limit": 10, "page": 1, "total": len(results)}
     
+    async def add_subdomainHistory(request: SubDomaiHistoryRequest):
+        resultMessage = {"success": {"count": 0, "messages": []}, "fail": {"count": 0, "messages": []}}
+        results = []
+        try:
+            dns_id = request.dns_id
+            zone_id = request.zone_id
+            type = request.type
+            name = request.name
+            content = request.content
+            account_id = request.account_id
+            team = request.team
+
+            url_zones_info = f'https://api.cloudflare.com/client/v4/zones?name={SubDomainController.clean_url(name)}'
+            response = requests.get(url_zones_info, headers=headers_cf)
+            print("Domain_info: ", response.json())
+        
+            # url_zones = f'{url_backend_subdomainHistory}'
+        
+            rule_data = {
+                "dns_id": dns_id,
+                "zone_id": zone_id,
+                "name": name,
+                "type": type,
+                "content": content,
+                "account_id": account_id,
+                "team": team
+            }
+        
+            update_response = requests.post(url_backend_subdomainHistory, headers=headers_backend, json=rule_data)
+            print("update_response", update_response.json())
+           
+            resultMessage["success"]["count"] += 1
+            resultMessage["success"]["messages"].append(f"{name}: added in CloudFlare successfully")
+            results.append({'name': name, 'content': content})
+        except Exception as e:
+            resultMessage["fail"]["count"] += 1
+            resultMessage["fail"]["messages"].append(f"{name}: added in CloudFlare failed")
+            results.append({'name': '', 'content': ''})
+            print("error add_subdomainHistory", e)
+
+        return {"status": "success", "data": results, "resultMessage": resultMessage}
