@@ -1,0 +1,9 @@
+on: [push, workflow_dispatch, pull_request]
+jobs:
+    Test:
+        uses: m3git/auto-devops/.github/workflows/auto-devops.yml@main
+    Build:
+        uses: m3git/auto-devops/.github/workflows/docker.github-ci.yml@main
+    Deploy:
+        uses: m3git/auto-devops/.github/workflows/cli.github-ci.yml@main
+        needs: Build

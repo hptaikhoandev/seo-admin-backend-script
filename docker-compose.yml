@@ -1,12 +1,86 @@
+version: "3.7"
+
 services:
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: "seo-admin-backend_script_${TIMESTAMP}"
+  reverse-proxy:
+    image: traefik:v3.4.1
+    command:
+      - "--log.level=DEBUG"
+      - "--accesslog=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    restart: always
     ports:
-      - '8000:8000'
+      - "80:80"
     volumes:
-      - ./data:/data
-    restart: unless-stopped
-  
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    depends_on:
+      - frontend
+      - backend
+      - backend-script
+
+  frontend:
+    restart: always
+    pull_policy: always
+    image: 975049997333.dkr.ecr.ap-southeast-2.amazonaws.com/hyperpush/seoadmin-frontend:production
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+      - "traefik.http.routers.frontend.rule=Host(`seo-admin.megatech.global`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+
+  backend:
+    restart: always
+    pull_policy: always
+    image: 975049997333.dkr.ecr.ap-southeast-2.amazonaws.com/hyperpush/seoadmin-backend:production
+    healthcheck:
+      test: 'curl -f http://localhost:880/api/health-check || exit 1'
+      interval: 2s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    env_file:
+      - backend.env
+    deploy:
+      update_config:
+          order: start-first
+          failure_action: rollback
+          delay: 5s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.backend.loadbalancer.server.port=880"
+      - "traefik.http.routers.backend.rule=Host(`seo-adminbe.megatech.global`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend.entrypoints=web"
+
+  backend-script:
+    restart: always
+    pull_policy: always
+    image: 975049997333.dkr.ecr.ap-southeast-2.amazonaws.com/hyperpush/seoadmin-backend-script:production
+    healthcheck:
+      test: 'curl -f http://localhost:8000/script/health-check || exit 1'
+      interval: 2s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      update_config:
+          order: start-first
+          failure_action: rollback
+          delay: 5s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.backend-script.loadbalancer.server.port=8000"
+      - "traefik.http.routers.backend-script.rule=Host(`seo-adminbe.megatech.global`) && PathPrefix(`/script`)"
+      - "traefik.http.routers.backend-script.entrypoints=web"
+    env_file:
+      - backend-script.env
+
+  phpmyadmin:
+    restart: always
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      - PMA_HOST=localhost
+      - PMA_PORT=3306

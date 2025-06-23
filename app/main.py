@@ -12,6 +12,7 @@ from app.routers import dashboard_router
 from app.routers import destroysite_router
 from app.routers import tracking_link_router
 from app.routers import command_router
+from app.routers import healthcheck_router
 from dotenv import load_dotenv
 import os
 
@@ -48,6 +49,7 @@ app.include_router(admin_router.router)
 app.include_router(dashboard_router.router)
 app.include_router(tracking_link_router.router)
 app.include_router(command_router.router)
+app.include_router(healthcheck_router.router)
 
 # Root route
 @app.get("/")
